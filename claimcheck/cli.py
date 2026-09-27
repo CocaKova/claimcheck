@@ -8,7 +8,8 @@
   claimcheck flagged [--all] [--json]    # receipts whose headline is not verified (newest first)
   claimcheck chain <session-id>          # recompute the live run log's hash chain
   claimcheck init [agent...] [--remove] [--dry-run] [--review-model M] [--review-agent A]   # wire every agent found here
-  claimcheck config [key [value|--unset]] # settings: review.model (the model reviews run on — pinned by the person), review.agent
+  claimcheck config [key [value|--unset]] # settings: review.model (pinned by the person), review.agent, review.endpoint, review.api_key
+  claimcheck local                       # local model servers answering here (vLLM, Ollama, LM Studio, llama.cpp…): free review models
   claimcheck review [receipt-id|session] [--limit N] [--dry-run]   # second opinion on flagged receipts, on the pinned model only
   claimcheck doctor                      # what is wired, how many receipts, any hook errors, the review model
   claimcheck open [receipt-id|session]   # open the latest (or named) receipt page in the browser
@@ -117,9 +118,14 @@ def cmd_chain(a):
 
 def cmd_init(a):
     from .install import init
-    for line in init(a.agents or None, remove=a.remove, dry_run=a.dry_run,
-                     review_model=a.review_model, review_agent=a.review_agent, ask=not a.no_input):
+    for line in init(a.agents or None, remove=a.remove, dry_run=a.dry_run, review_model=a.review_model,
+                     review_agent=a.review_agent, review_endpoint=a.review_endpoint, ask=not a.no_input):
         print(line)
+
+
+def cmd_local(a):
+    from .local import lines
+    print("\n".join(lines()))
 
 
 def cmd_config(a):
@@ -172,9 +178,11 @@ def main(argv=None):
     i = sub.add_parser("init"); i.add_argument("agents", nargs="*"); i.add_argument("--remove", action="store_true")
     i.add_argument("--dry-run", action="store_true")
     i.add_argument("--review-model", metavar="MODEL", help="pin the model reviews run on (the person's choice; never the agent's default)")
-    i.add_argument("--review-agent", metavar="AGENT", help="which agent runs reviews: claude-code | codex | gemini | hermes")
+    i.add_argument("--review-agent", metavar="AGENT", help="what runs reviews: endpoint | claude-code | codex | gemini | hermes")
+    i.add_argument("--review-endpoint", metavar="URL", help="OpenAI-compatible server for reviews, e.g. http://127.0.0.1:8000/v1 (local = free, no agent CLI needed)")
     i.add_argument("--no-input", action="store_true", help="never prompt on the terminal for the review model")
     i.set_defaults(f=cmd_init)
+    sub.add_parser("local", help="list local model servers answering on the usual ports (free review models)").set_defaults(f=cmd_local)
     cf = sub.add_parser("config"); cf.add_argument("key", nargs="?"); cf.add_argument("value", nargs="?")
     cf.add_argument("--unset", action="store_true"); cf.set_defaults(f=cmd_config)
     rv = sub.add_parser("review"); rv.add_argument("which", nargs="?"); rv.add_argument("--limit", type=int, default=3)

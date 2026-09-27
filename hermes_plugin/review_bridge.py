@@ -67,13 +67,13 @@ def review_model() -> str | None:
 
     Hermes runs the review card on its profile model unless told otherwise; a pinned model rides on
     `kanban create --model` so a review never has to run on the biggest brain in the house."""
-    if os.environ.get("CLAIMCHECK_REVIEW_MODEL"):
-        return os.environ["CLAIMCHECK_REVIEW_MODEL"]
     try:
         from claimcheck import config
+        if config.effective_agent() not in (None, "hermes"):
+            return None   # pinned to a local endpoint or another CLI: `claimcheck review` handles it, the card stays on the profile model
         return config.get("review.model")
     except Exception:  # pragma: no cover - old claimcheck without config
-        return None
+        return os.environ.get("CLAIMCHECK_REVIEW_MODEL")
 
 
 def _run(*args: str) -> subprocess.CompletedProcess:

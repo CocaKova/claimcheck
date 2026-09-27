@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parent.parent
 UH = Path(tempfile.mkdtemp(prefix="claimcheck-userhome-"))
 CH = UH / ".claimcheck"
 ENV = {k: v for k, v in os.environ.items() if not k.startswith("CLAIMCHECK_REVIEW")}
-ENV.update({"CLAIMCHECK_USER_HOME": str(UH), "CLAIMCHECK_HOME": str(CH), "PYTHONPATH": str(ROOT), "PATH": "/usr/bin:/bin"})
+ENV.update({"CLAIMCHECK_USER_HOME": str(UH), "CLAIMCHECK_HOME": str(CH), "PYTHONPATH": str(ROOT), "PATH": "/usr/bin:/bin",
+            "CLAIMCHECK_LOCAL_URLS": "http://127.0.0.1:9"})  # no local server in these tests
 
 
 def cc(*args, ok=True, stdin=""):
