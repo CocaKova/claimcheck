@@ -1,0 +1,12 @@
+name: claimcheck
+version: 0.1.2
+description: "Receipts for every Hermes run. Captures each tool call live into a hash-chained run log (post_tool_call, before storage truncation), takes the agent's final report from post_llm_call, and on on_session_end splits that report into claims, checks every claim against the tool log by code (verified / unverified / pre-existing / contradicted / unchecked), and writes a signed receipt (JSON + HTML page) under ~/.claimcheck/receipts/<session>/. No model call, no core patch, nothing leaves the machine unless api_url is set. Settings: privacy (full|summary|hashes), skip_platforms, receipt_chatty (receipts for runs with no tool calls), api_url."
+author: CocaKova
+homepage: https://claimcheck.cc
+license: Apache-2.0
+kind: backend
+provides_hooks:
+  - post_tool_call
+  - post_llm_call
+  - on_session_end
+  - subagent_stop

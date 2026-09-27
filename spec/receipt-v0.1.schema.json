@@ -1,0 +1,502 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claimcheck.cc/spec/receipt-v0.1.schema.json",
+  "title": "Claimcheck receipt v0.1",
+  "description": "A receipt for one agent run: what the agent touched (ledger), what it claimed in its final report (claims), and how each claim checks against the ledger (verdicts). Verdicts are computed by code. The signature covers the JCS canonical form of the document with the `signature` member removed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claimcheck",
+    "id",
+    "created_at",
+    "run",
+    "capture",
+    "ledger",
+    "report",
+    "claims",
+    "summary",
+    "verifier",
+    "privacy"
+  ],
+  "properties": {
+    "claimcheck": {
+      "const": "0.1",
+      "description": "Spec version."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^rcpt_[0-9a-f]{24}$",
+      "description": "First 24 hex chars of sha256 over the canonical document without id, signature and created_at. Content-addressed: the same run verified by the same rules gets the same id whenever it is built."
+    },
+    "created_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter",
+        "session_id",
+        "started_at",
+        "ended_at",
+        "agent"
+      ],
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+          "description": "Which adapter produced the receipt: hermes, claude-code, codex, gemini, cursor, copilot, cline, windsurf, openclaw, n8n, github-action, cli, other."
+        },
+        "adapter_version": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "The platform's session id. Receipts for turns of one session share it."
+        },
+        "turn_id": {
+          "type": "string",
+          "description": "Present when the receipt covers one turn of a longer session."
+        },
+        "agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "platform"
+          ],
+          "properties": {
+            "platform": {
+              "type": "string",
+              "description": "hermes, claude-code, codex, openclaw, n8n …"
+            },
+            "model": {
+              "type": "string"
+            },
+            "profile": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          }
+        },
+        "started_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "ended_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "asked": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "The request the run answered (first user message), trimmed."
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "host": {
+          "type": "string",
+          "description": "Machine label or its hash; the adapter chooses per privacy level."
+        },
+        "cwd": {
+          "type": "string"
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "events",
+        "hash_alg",
+        "redaction"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "live",
+            "at-rest"
+          ],
+          "description": "live = events hash-chained by the adapter as they happened; at-rest = rebuilt afterwards from the platform's stored log (may be truncated or lag)."
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tool events in the chain."
+        },
+        "hash_alg": {
+          "const": "sha256"
+        },
+        "chain_head": {
+          "$ref": "#/$defs/sha256",
+          "description": "Hash of the last event; each event hashes its predecessor. Absent for at-rest capture with no chain."
+        },
+        "redaction": {
+          "type": "string",
+          "description": "Identifier of the redaction rule-set applied before hashing, e.g. claimcheck-redact-v1."
+        },
+        "log_ref": {
+          "type": "string",
+          "description": "Where the adapter kept the run log (local path or URL). Never required to verify the receipt."
+        }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool_calls",
+        "by_tool",
+        "commands",
+        "files",
+        "external"
+      ],
+      "properties": {
+        "tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_tool": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "commands": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "failed",
+            "remote"
+          ],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Non-zero exit."
+            },
+            "remote": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Commands that reached another machine (ssh, scp, rsync, curl, wget, git push)."
+            },
+            "items": {
+              "type": "array",
+              "description": "Omitted at privacy=hashes; text is truncated at privacy=summary.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "i",
+                  "text"
+                ],
+                "properties": {
+                  "i": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Event index in the chain."
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "exit_code": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "ts": {
+                    "$ref": "#/$defs/timestamp"
+                  },
+                  "remote": {
+                    "type": "boolean"
+                  },
+                  "sha256": {
+                    "$ref": "#/$defs/sha256",
+                    "description": "Hash of the full redacted text when text is truncated or omitted."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "files": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "written",
+            "read"
+          ],
+          "properties": {
+            "written": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Paths the run wrote or edited. Basenames only at privacy=summary; hashes at privacy=hashes."
+            },
+            "read": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "external": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Actions outside files and commands: cron, messages, skills, memory, browser, delegation."
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reasoning_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cost_usd": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]{2,6}$",
+              "description": "Decimal string, never a float, so canonicalization is exact."
+            }
+          }
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The agent's final message, verbatim after redaction. Omitted at privacy=hashes."
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256",
+          "description": "Hash of the redacted final message. Ties claims to exactly this text."
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "i",
+          "text",
+          "kind",
+          "targets",
+          "verdict",
+          "evidence"
+        ],
+        "properties": {
+          "i": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Position in the deterministic split of the report. Stable across re-verification of the same text."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file_changed",
+              "command_ran",
+              "result_observed",
+              "external_action",
+              "other"
+            ]
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "description": "Atomic literals the claim rests on, as extracted from the sentence."
+          },
+          "verdict": {
+            "$ref": "#/$defs/verdict"
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Human-readable trace: which literal was found where, or why nothing was."
+          },
+          "event_refs": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Chain indices of the events the evidence came from."
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verified",
+        "unverified",
+        "pre_existing",
+        "contradicted",
+        "unchecked",
+        "headline"
+      ],
+      "properties": {
+        "verified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unverified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pre_existing": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contradicted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unchecked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "headline": {
+          "$ref": "#/$defs/verdict",
+          "description": "The worst verdict present (contradicted > pre-existing > unverified > verified). unchecked only when the run made no checkable claims."
+        }
+      }
+    },
+    "verifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "rules_sha256",
+        "classifier"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "rules_sha256": {
+          "$ref": "#/$defs/sha256",
+          "description": "Hash of the extraction + verification rule source. A later verifier can reproduce the verdicts exactly."
+        },
+        "classifier": {
+          "type": "string",
+          "enum": [
+            "none",
+            "local",
+            "api"
+          ],
+          "description": "Whether a model classified claim kinds. Verdict logic is code in every case."
+        },
+        "classifier_model": {
+          "type": "string"
+        }
+      }
+    },
+    "privacy": {
+      "type": "string",
+      "enum": [
+        "full",
+        "summary",
+        "hashes"
+      ],
+      "description": "How much of the ledger and report this document carries. The signature is over whatever is present."
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alg",
+        "kid",
+        "sig",
+        "signed_at",
+        "canon"
+      ],
+      "properties": {
+        "alg": {
+          "const": "ed25519"
+        },
+        "kid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$",
+          "description": "First 16 hex chars of sha256 over the raw 32-byte public key."
+        },
+        "pub": {
+          "type": "string",
+          "description": "Base64 raw public key. Optional; a registry can hold it instead."
+        },
+        "sig": {
+          "type": "string",
+          "description": "Base64 ed25519 signature over the JCS canonical bytes of the document without `signature`."
+        },
+        "signed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "canon": {
+          "const": "jcs",
+          "description": "RFC 8785 JSON Canonicalization Scheme."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339, UTC, millisecond precision: 2026-09-26T23:41:07.123Z"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "unverified",
+        "pre-existing",
+        "contradicted",
+        "unchecked"
+      ]
+    }
+  }
+}

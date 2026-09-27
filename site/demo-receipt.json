@@ -1,0 +1,684 @@
+{
+ "claimcheck": "0.1",
+ "created_at": "2026-09-27T04:07:04.666Z",
+ "run": {
+  "adapter": "hermes",
+  "adapter_version": "0.1.0",
+  "session_id": "demo_sonic_2026-09-26",
+  "agent": {
+   "platform": "hermes",
+   "model": "qwen3.8-flash-next"
+  },
+  "started_at": "2026-09-26T20:32:28.619Z",
+  "ended_at": "2026-09-26T21:31:59.271Z",
+  "asked": "Review: See where mistakes happened, if you fixed them, and if not patch the sk…",
+  "title": "Sonic side-scroller: rings, parallax, empty bottom half"
+ },
+ "capture": {
+  "mode": "at-rest",
+  "events": 59,
+  "hash_alg": "sha256",
+  "redaction": "claimcheck-redact-v1"
+ },
+ "ledger": {
+  "tool_calls": 59,
+  "by_tool": {
+   "skill_view": 5,
+   "terminal": 19,
+   "read_file": 5,
+   "vision_analyze": 3,
+   "skill_manage": 4,
+   "execute_code": 10,
+   "patch": 12,
+   "search_files": 1
+  },
+  "commands": {
+   "total": 29,
+   "failed": 1,
+   "remote": 7,
+   "items": [
+    {
+     "i": 4,
+     "text": "ls",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:32:55.210Z",
+     "sha256": "912e537bfe06ffcf495af47961eae7c2fcd72d55608b4f0146f17c2e4b153cda"
+    },
+    {
+     "i": 5,
+     "text": "find",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:32:59.347Z",
+     "sha256": "ca3300fd642ad22acc62ddf962cdf0951dda466bdb1ef0ee1edef8e1409e7db9"
+    },
+    {
+     "i": 11,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:34:03.094Z",
+     "sha256": "5e4ac675258db3945ae838cedf30ee6ff5a1192d785154e98a866e470a5429fc"
+    },
+    {
+     "i": 12,
+     "text": "which",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:34:57.177Z",
+     "sha256": "e18413313714fa2f5c33d872ad0777893872dbe13c9a95ca7124a58da22ee82f"
+    },
+    {
+     "i": 15,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:41:08.147Z",
+     "sha256": "8864fe3e93b6f46de827f911c747d4d7c0d61562d29c6abac31b9122e2f8f500"
+    },
+    {
+     "i": 16,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:44:48.692Z",
+     "remote": true,
+     "sha256": "61219bb2e02388e59e3283f1916d2f5d48ba41c0d9ff84603eb07194333327fa"
+    },
+    {
+     "i": 17,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:44:55.503Z",
+     "remote": true,
+     "sha256": "589f1bd0fd6cefa036f8f66c31aa488d9844dc2d9ea745e174a5d9263f26b848"
+    },
+    {
+     "i": 20,
+     "text": "from",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:52:21.111Z",
+     "sha256": "e957e49dd61619c1903de16b48b039bd81b056d292532c28b0778e639782ee8d"
+    },
+    {
+     "i": 22,
+     "text": "cat",
+     "exit_code": 0,
+     "ts": "2026-09-26T20:54:01.194Z",
+     "remote": true,
+     "sha256": "4f24a73e1c165dfb545c9da877e01dc285838a44d3f0aa690a8558786b6c784d"
+    },
+    {
+     "i": 30,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:02:20.441Z",
+     "sha256": "a73ef10abfd2708c37c1c725c6746cdf199fd186973080e71468d68fd98d43c4"
+    },
+    {
+     "i": 32,
+     "text": "timeout",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:03:08.702Z",
+     "remote": true,
+     "sha256": "2998d8ebf73078a5d11483c8c0618ebd903fdf61034786cc8440d740ab5dc31e"
+    },
+    {
+     "i": 33,
+     "text": "import",
+     "exit_code": 1,
+     "ts": "2026-09-26T21:05:13.665Z",
+     "sha256": "50401e57faa4c9ea76a8995a942d41d891ebaf8a6cf915d45e1221d2a319ab8a"
+    },
+    {
+     "i": 34,
+     "text": "import",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:05:33.772Z",
+     "sha256": "4716b2e6c3df28ac7465a21d47118598ec778e15ab0ae5b36972cb5e00780817"
+    },
+    {
+     "i": 35,
+     "text": "import",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:06:53.052Z",
+     "sha256": "d8c18b6d9412ddec1f1897e25706e7e3b39302667322ec46c586bd6d5e7b04cc"
+    },
+    {
+     "i": 36,
+     "text": "#",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:08:32.448Z",
+     "sha256": "dc61eafdc8e960721f2b43e0f1d58ec14733a97d25635763af049aa79ca24dcc"
+    },
+    {
+     "i": 38,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:12:49.383Z",
+     "sha256": "1a1014d362d858b302232b7a836957149128414fb3f05093ceab38d786683fcb"
+    },
+    {
+     "i": 39,
+     "text": "#",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:13:06.653Z",
+     "sha256": "461444a64958222e39e2f58fef96e62944c2e54211dd722473155c98f0e7104f"
+    },
+    {
+     "i": 40,
+     "text": "#",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:14:04.642Z",
+     "sha256": "c265161899cddc397ff39a62c6475c0dcd506aa8e970f4b80056554f78dd8f31"
+    },
+    {
+     "i": 42,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:15:58.498Z",
+     "sha256": "0b7ea5124754c1f2408732d472ce9cfbedba18cd1e56c28ec44b59afa6658023"
+    },
+    {
+     "i": 43,
+     "text": "import",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:16:15.580Z",
+     "sha256": "0c9b6e34dc5c39f43520e465c01547f60f0d7254b88326c6aadd928896807430"
+    },
+    {
+     "i": 46,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:19:54.835Z",
+     "sha256": "9fce196cc89114de45fd7025bc7b94ff60c1c46128443dfeb1727d934c1da010"
+    },
+    {
+     "i": 47,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:20:04.057Z",
+     "sha256": "72bad287d7ebe78d06139552b7cd81663816fb2f26530067b44fc5ec67f0d46d"
+    },
+    {
+     "i": 48,
+     "text": "#",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:20:27.180Z",
+     "sha256": "93f00f9459bd6a75bbad5a797fb8090750c46d32870a6610c465b2b12e6b9551"
+    },
+    {
+     "i": 51,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:24:33.603Z",
+     "sha256": "597d07134c3e7bb1e0294b7fd506c1b6fa53c7bc6fdb2300eb5ba6c18d402fdf"
+    },
+    {
+     "i": 52,
+     "text": "import",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:25:21.048Z",
+     "sha256": "298897be5d694646c9223a893530d34357147864556a96927893375320292f33"
+    },
+    {
+     "i": 54,
+     "text": "cat",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:26:59.226Z",
+     "remote": true,
+     "sha256": "399647bee2647fe99edb6edc5093fd87b1738d1df334ca25614aa337457ea1a7"
+    },
+    {
+     "i": 55,
+     "text": "cd",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:27:04.315Z",
+     "sha256": "a1a8e9efec0e0fcb20cca44491d38a1cc94292b8a21dde98a8425e30c8c7002a"
+    },
+    {
+     "i": 56,
+     "text": "for",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:27:59.716Z",
+     "remote": true,
+     "sha256": "84f89546b99d1a9cc8967282ec0b7459835fc8c37e28ed0fb77e42c977027eed"
+    },
+    {
+     "i": 57,
+     "text": "for",
+     "exit_code": 0,
+     "ts": "2026-09-26T21:28:05.520Z",
+     "remote": true,
+     "sha256": "76b2c664d92447555c2fff02ac5f1838990141b844f3a81425a7f6ddb714f790"
+    }
+   ]
+  },
+  "files": {
+   "written": [
+    "main.gd",
+    "skill:doodle-sprite-generator",
+    "skill:godot-game-dev"
+   ],
+   "read": [
+    "SKILL.md",
+    "api.md",
+    "export_presets.cfg",
+    "gen_assets.py",
+    "main.gd",
+    "main.tscn",
+    "project.godot"
+   ]
+  },
+  "external": 0,
+  "usage": {
+   "input_tokens": 149316,
+   "output_tokens": 121863,
+   "reasoning_tokens": 106763
+  }
+ },
+ "report": {
+  "text": "1. **Ring animation** - each ring is now a real 4-frame AnimatedSprite2D: the oval squeezes wide→narrow→wide (5.2→3.8→2.2→3.8 px radius) at 12 fps, which reads as the classic ring spin. Old single-frame ring.png replaced by ring_0..3.png.\n\n2. **Background depth** - went from 2 layers to 4 with different scroll rates, so it actually parallaxes: clouds (white puffs, 0.2x) → far mountains (mid-blue domes, 0.35x) → hills (teal domes, 0.5x) → palms (0.85x), sun pinned behind everything. Palms doubled to 4 so the near layer isn't lonely.\n\n3. **Bigger picture** - added `window_width_override=1280` / `window_height_override=720`. The 640x360 canvas stays crisp (integer 2x scale, nearest-neighbor), so you get a proper-sized window instead of the postage stamp.\n\n# Code Review Summary — sonic-test (Godot 4.7.2)\n\n## What was verified (executed, not just read)\n- `godot --headless --path . --quit-after 3300` → import clean; `ANIM ring_frame=0→3`, `player_frame=0→1 anim=run`, `DIAG … rings=10 speed=320 cleared=true score=295`. Ring spin + run cycle + full stage clear confirmed live. ✔ matches claims.\n- Xvfb render (`xvfb-run … --quit-after 210/3300`) → `shot.png` regenerated (1280×720, confirmed via PNG IHDR + pixel profiling).\n- Pixel profiling of `shot.png`: drawn content ≈ 14% of the frame; five horizontal bands at y≈0–35, 49–74, 101–126, 179–226, 323–472. This quantifies the owner's \"a lot of blank space\" note: ~46% of the window (y 472–720) is bare `default_clear_color`.\n- Export re-run after fixes: `build/sonic_test.exe` = 109,169,768 bytes. Note: this is **newer than the the desktop copy** (15:11, 109,168,328) — the new exe must be re-synced.\n- the desktop ssh sync itself: **not re-verifiable from this session** (both key files return `Permission denied` against 10.0.0.53 / 10.8.0.18 in this environment); the 15:11 size-match rests on the primary agent's report.\n\n## Mistakes found in the work, and status\n\n**Fixed (patched into `/home/dev/workspace/sonic-test/main.gd`, all re-verified by rerunning the engine):**\n1. **Parallax layers ran out of tiles mid-stage** (`main.gd:79-110`). With `pos.x = base − camx·(1−scale)` and camera reaching x≈1290, the visible window slides forward to `(2−scale)·camx ± vw/2`; the old counts (clouds 8, mountains 10, hills 14) exhausted at tile index ~9. Now 31 / 29 / 27 (formula: `ceil(((2−scale)·cam_max + vw/2) / sheet_w)`), and clouds start at `i−3` so the left of the first screen isn't bare. This was the main cause of the \"worse\" flat background.\n2. **Bottom half of the window empty** (`main.gd:132-135`): ground was painted 1 tile row deep while collision was 48px and the camera shows ~180px below the player. Ground rows now filled 3-deep per segment (`for rr in range(seg[2], seg[2]+3)`), pushing the drawn bottom band from y≈410 to y≈472.\n3. **Headless screenshot null crash**: `get_viewport().get_texture()` is null under `--headless` (engine logged `ERROR: Parameter \"t\" is null`). Now guarded on the texture before `get_image().save_png`. (`main.gd:259-262`)\n4. **Layer y-positions compressed into one middle band** — clouds/mountains spread across y 124–205 so all four layers read in one frame instead of stacking in a thin strip.\n\n**Verified-correct, no change needed:**\n- `play()` after `add_child` at all three AnimatedSprite2D sites (the actual ring-freeze fix) — frames now advance (0→3 observed).\n- Run cycle: 2-frame leg swap (`_sonic_core(g, -1)` offsets the left shoe) gated on `|speed| > 8`, `stand`/`ball` switching — matches the skill's classic-platformer minimum.\n- Sprite sheets are genuinely transparent-backed (index 0 via tRNS), sky comes only from `default_clear_color` — the flat-band problem from the earlier iteration is fixed at the source.\n- `project.godot`: `keycode`/`physical_keycode` fields used correctly; 4.7 feature string; gl_compatibility; integer 2x window override.\n- `export_presets.cfg` carries the required top-level keys per skill.\n\n**Minor observations (non-blocking):**\n- Sun at x=560 is off-window at spawn (camera spans x −296…344); it only appears mid-run due to parallax. Cosmetic.\n- The Xvfb `DIAG` shows `pos=(24.0, …) cleared=false` — expected: scripted drive is headless-only by design; don't read it as a failure.\n\n## Skill patching (done)\n`godot-game-dev` pitfalls updated with: the parallax coverage formula (`(2−scale)·camx ± vw/2`, worked example), the full-height layer-spreading rule, and the `--headless` null-texture guard. `doodle-sprite-generator` cross-references the stdlib PNG-writer pattern to `godot-game-dev`.\n\n## Recommended next steps\n1. Re-copy the rebuilt `build/sonic_test.exe` (109,169,768 bytes, 16:27) to the desktop and relaunch — sizes will no longer match the 15:11 report otherwise.\n2. Optional polish: extend `GROUND` first segment to column −4 so the spawn screen's left third has ground too.\n\n**Verdict: after fixes — Approve.** All three claimed fixes verified live in the engine; the \"not full screen\" complaint is materially improved (drawn bands now span y 0–472 with full-width cloud/ridge coverage) and the remaining blank is the sky region, consistent with the palette design.",
+  "sha256": "b040df6172409b334d0c7dc4807d0ee532a0070d33487750cf16444a8e5a0afb"
+ },
+ "claims": [
+  {
+   "i": 0,
+   "text": "Ring animation - each ring is now a real 4-frame AnimatedSprite2D: the oval squeezes wide→narrow→wide (5.2→3.8→2.2→3.8 px radius) at 12 fps, which reads as the classic ring spin.",
+   "kind": "result_observed",
+   "targets": [
+    "5.2",
+    "3.8",
+    "2.2",
+    "12"
+   ],
+   "verdict": "verified",
+   "evidence": "`5.2` in output; `3.8` in output; `2.2` in output; `12` in write"
+  },
+  {
+   "i": 1,
+   "text": "Old single-frame ring.png replaced by ring_0..3.png.",
+   "kind": "file_changed",
+   "targets": [
+    "ring.png",
+    "ring_0..3.png"
+   ],
+   "verdict": "verified",
+   "evidence": "`ring_0` in command (exit ok); `3.png` in command (exit ok) · unchecked: `ring.png`"
+  },
+  {
+   "i": 2,
+   "text": "Background depth - went from 2 layers to 4 with different scroll rates, so it actually parallaxes: clouds (white puffs, 0.2x) → far mountains (mid-blue domes, 0.35x) → hills (teal domes, 0.5x) → palms (0.85x), sun pinned behind everything.",
+   "kind": "result_observed",
+   "targets": [],
+   "verdict": "unchecked",
+   "evidence": "nothing literal to check"
+  },
+  {
+   "i": 3,
+   "text": "Palms doubled to 4 so the near layer isn't lonely.",
+   "kind": "result_observed",
+   "targets": [],
+   "verdict": "unchecked",
+   "evidence": "nothing literal to check"
+  },
+  {
+   "i": 4,
+   "text": "Bigger picture - added `window_width_override=1280` / `window_height_override=720`.",
+   "kind": "file_changed",
+   "targets": [
+    "window_width_override=1280",
+    "window_height_override=720"
+   ],
+   "verdict": "pre-existing",
+   "evidence": "`window_width_override=1280`, `window_height_override=720` appears only in content the agent read; never in anything it wrote or ran"
+  },
+  {
+   "i": 5,
+   "text": "`godot --headless --path . --quit-after 3300` → import clean; `ANIM ring_frame=0→3`, `player_frame=0→1 anim=run`, `DIAG … rings=10 speed=320 cleared=true score=295`.",
+   "kind": "command_ran",
+   "targets": [
+    "godot --headless --path . --quit-after 3300",
+    "ANIM ring_frame=0→3",
+    "player_frame=0→1 anim=run",
+    "DIAG … rings=10 speed=320 cleared=true score=295"
+   ],
+   "verdict": "verified",
+   "evidence": "`godot --headless --path . --quit-after 3300` in command (exit ok); `ANIM ring_frame=0` in output; `player_frame=0` in output; `1 anim=run` in output; words of `DIAG … rings=10 speed=320 cleared=true score=295` in output"
+  },
+  {
+   "i": 6,
+   "text": "Ring spin + run cycle + full stage clear confirmed live. ✔ matches claims.",
+   "kind": "command_ran",
+   "targets": [],
+   "verdict": "unchecked",
+   "evidence": "nothing literal to check"
+  },
+  {
+   "i": 7,
+   "text": "Xvfb render (`xvfb-run … --quit-after 210/3300`) → `shot.png` regenerated (1280×720, confirmed via PNG IHDR + pixel profiling).",
+   "kind": "command_ran",
+   "targets": [
+    "xvfb-run … --quit-after 210/3300",
+    "shot.png",
+    "1280×720"
+   ],
+   "verdict": "verified",
+   "evidence": "`xvfb-run … --quit-after 210/3300` in command (exit ok); `shot.png` in write; `1280×720` in output"
+  },
+  {
+   "i": 8,
+   "text": "Pixel profiling of `shot.png`: drawn content ≈ 14% of the frame; five horizontal bands at y≈0–35, 49–74, 101–126, 179–226, 323–472.",
+   "kind": "result_observed",
+   "targets": [
+    "shot.png",
+    "14",
+    "35",
+    "49",
+    "74",
+    "101",
+    "126",
+    "179",
+    "226",
+    "323"
+   ],
+   "verdict": "verified",
+   "evidence": "`shot.png` in write; `14` in write; `35` in write; `49` in output; `74` in output; `101` in output; `126` in output; `179` in output; `226` in write; `323` in command (exit ok)"
+  },
+  {
+   "i": 9,
+   "text": "This quantifies the owner's \"a lot of blank space\" note: ~46% of the window (y 472–720) is bare `default_clear_color`.",
+   "kind": "result_observed",
+   "targets": [
+    "default_clear_color",
+    "~46",
+    "472",
+    "720"
+   ],
+   "verdict": "verified",
+   "evidence": "`default_clear_color` in write; `46` in command (exit ok); `472` in output; `720` in output"
+  },
+  {
+   "i": 10,
+   "text": "Export re-run after fixes: `build/sonic_test.exe` = 109,169,768 bytes.",
+   "kind": "command_ran",
+   "targets": [
+    "build/sonic_test.exe",
+    "109,169,768"
+   ],
+   "verdict": "verified",
+   "evidence": "`build/sonic_test.exe` in command (exit ok); `109` in output; `169` in output; `768` in output"
+  },
+  {
+   "i": 11,
+   "text": "the desktop ssh sync itself: not re-verifiable from this session (both key files return `Permission denied` against 10.0.0.53 / 10.8.0.18 in this environment); the 15:11 size-match rests on the primary agent's report.",
+   "kind": "result_observed",
+   "targets": [
+    "Permission denied",
+    "10.0.0.53",
+    "10.8.0.18"
+   ],
+   "verdict": "verified",
+   "evidence": "`Permission denied` in output; `10.0.0.53` in output; `10.8.0.18` in output"
+  },
+  {
+   "i": 12,
+   "text": "Fixed (patched into `/home/dev/workspace/sonic-test/main.gd`, all re-verified by rerunning the engine)",
+   "kind": "file_changed",
+   "targets": [
+    "/home/dev/workspace/sonic-test/main.gd"
+   ],
+   "verdict": "verified",
+   "evidence": "`/home/dev/workspace/sonic-test/main.gd` in write"
+  },
+  {
+   "i": 13,
+   "text": "Parallax layers ran out of tiles mid-stage (`main.gd:79-110`).",
+   "kind": "command_ran",
+   "targets": [
+    "main.gd:79-110"
+   ],
+   "verdict": "verified",
+   "evidence": "`main.gd` in write"
+  },
+  {
+   "i": 14,
+   "text": "With `pos.x = base − camx·(1−scale)` and camera reaching x≈1290, the visible window slides forward to `(2−scale)·camx ± vw/2`; the old counts (clouds 8, mountains 10, hills 14) exhausted at tile index ~9.",
+   "kind": "result_observed",
+   "targets": [
+    "pos.x = base − camx·(1−scale)",
+    "(2−scale)·camx ± vw/2",
+    "1290",
+    "10",
+    "14"
+   ],
+   "verdict": "verified",
+   "evidence": "words of `pos.x = base − camx·(1−scale` in command (exit ok); words of `(2−scale)·camx ± vw/2` in command (exit ok); `1290` in write; `10` in write; `14` in write"
+  },
+  {
+   "i": 15,
+   "text": "Now 31 / 29 / 27 (formula: `ceil(((2−scale)·cam_max + vw/2) / sheet_w)`), and clouds start at `i−3` so the left of the first screen isn't bare.",
+   "kind": "result_observed",
+   "targets": [
+    "ceil(((2−scale)·cam_max + vw/2) / sheet_w)",
+    "i−3",
+    "31",
+    "29",
+    "27"
+   ],
+   "verdict": "verified",
+   "evidence": "words of `ceil(((2−scale)·cam_max + vw` in command (exit ok); `sheet_w` in write; `31` in write; `29` in write; `27` in write · unchecked: `2`"
+  },
+  {
+   "i": 16,
+   "text": "Bottom half of the window empty (`main.gd:132-135`): ground was painted 1 tile row deep while collision was 48px and the camera shows ~180px below the player.",
+   "kind": "result_observed",
+   "targets": [
+    "main.gd:132-135",
+    "~180px"
+   ],
+   "verdict": "verified",
+   "evidence": "`main.gd` in write; `180` in output"
+  },
+  {
+   "i": 17,
+   "text": "Ground rows now filled 3-deep per segment (`for rr in range(seg[2], seg[2]+3)`), pushing the drawn bottom band from y≈410 to y≈472.",
+   "kind": "result_observed",
+   "targets": [
+    "for rr in range(seg[2], seg[2]+3)",
+    "410"
+   ],
+   "verdict": "verified",
+   "evidence": "`for rr in range(seg[2]` in write; `410` in output · unchecked: `seg[2]+3`"
+  },
+  {
+   "i": 18,
+   "text": "Headless screenshot null crash: `get_viewport().get_texture()` is null under `--headless` (engine logged `ERROR: Parameter \"t\" is null`).",
+   "kind": "other",
+   "targets": [
+    "get_viewport().get_texture()",
+    "--headless",
+    "ERROR: Parameter \"t\" is null"
+   ],
+   "verdict": "verified",
+   "evidence": "`get_viewport().get_texture` in write; `--headless` in write; `ERROR: Parameter \"t\" is null` in output"
+  },
+  {
+   "i": 19,
+   "text": "Now guarded on the texture before `get_image().save_png`.",
+   "kind": "file_changed",
+   "targets": [
+    "get_image().save_png"
+   ],
+   "verdict": "verified",
+   "evidence": "`get_image().save_png` in write"
+  },
+  {
+   "i": 20,
+   "text": "Layer y-positions compressed into one middle band — clouds/mountains spread across y 124–205 so all four layers read in one frame instead of stacking in a thin strip.",
+   "kind": "result_observed",
+   "targets": [
+    "124",
+    "205"
+   ],
+   "verdict": "verified",
+   "evidence": "`124` in write; `205` in write"
+  },
+  {
+   "i": 21,
+   "text": "Verified-correct, no change needed",
+   "kind": "result_observed",
+   "targets": [],
+   "verdict": "unchecked",
+   "evidence": "nothing literal to check"
+  },
+  {
+   "i": 22,
+   "text": "`play()` after `add_child` at all three AnimatedSprite2D sites (the actual ring-freeze fix) — frames now advance (0→3 observed).",
+   "kind": "result_observed",
+   "targets": [
+    "play()",
+    "add_child"
+   ],
+   "verdict": "verified",
+   "evidence": "`play` in output; `add_child` in write"
+  },
+  {
+   "i": 23,
+   "text": "Run cycle: 2-frame leg swap (`_sonic_core(g, -1)` offsets the left shoe) gated on `|speed| > 8`, `stand`/`ball` switching — matches the skill's classic-platformer minimum.",
+   "kind": "command_ran",
+   "targets": [
+    "_sonic_core(g, -1)",
+    "|speed| > 8",
+    "stand",
+    "ball"
+   ],
+   "verdict": "verified",
+   "evidence": "`_sonic_core(g` in output; `-1` in write; `stand` in command (exit ok); `ball` in command (exit ok) · unchecked: `|speed| > 8`"
+  },
+  {
+   "i": 24,
+   "text": "Sprite sheets are genuinely transparent-backed (index 0 via tRNS), sky comes only from `default_clear_color` — the flat-band problem from the earlier iteration is fixed at the source.",
+   "kind": "file_changed",
+   "targets": [
+    "default_clear_color"
+   ],
+   "verdict": "verified",
+   "evidence": "`default_clear_color` in write"
+  },
+  {
+   "i": 25,
+   "text": "`project.godot`: `keycode`/`physical_keycode` fields used correctly; 4.7 feature string; gl_compatibility; integer 2x window override.",
+   "kind": "result_observed",
+   "targets": [
+    "project.godot",
+    "keycode",
+    "physical_keycode",
+    "4.7"
+   ],
+   "verdict": "verified",
+   "evidence": "`project.godot` in output; `keycode` in output; `physical_keycode` in output; `4.7` in output"
+  },
+  {
+   "i": 26,
+   "text": "`export_presets.cfg` carries the required top-level keys per skill.",
+   "kind": "external_action",
+   "targets": [
+    "export_presets.cfg"
+   ],
+   "verdict": "verified",
+   "evidence": "`export_presets.cfg` in output"
+  },
+  {
+   "i": 27,
+   "text": "Minor observations (non-blocking)",
+   "kind": "result_observed",
+   "targets": [],
+   "verdict": "unchecked",
+   "evidence": "nothing literal to check"
+  },
+  {
+   "i": 28,
+   "text": "Sun at x=560 is off-window at spawn (camera spans x −296…344); it only appears mid-run due to parallax.",
+   "kind": "command_ran",
+   "targets": [
+    "x=560",
+    "296",
+    "344"
+   ],
+   "verdict": "verified",
+   "evidence": "`296` in output; `344` in output · unchecked: `x=560`"
+  },
+  {
+   "i": 29,
+   "text": "The Xvfb `DIAG` shows `pos=(24.0, …) cleared=false` — expected: scripted drive is headless-only by design; don't read it as a failure.",
+   "kind": "result_observed",
+   "targets": [
+    "DIAG",
+    "pos=(24.0, …) cleared=false"
+   ],
+   "verdict": "verified",
+   "evidence": "`DIAG` in output; `pos=(24.0` in output; words of `…) cleared=false` in output"
+  },
+  {
+   "i": 30,
+   "text": "`godot-game-dev` pitfalls updated with: the parallax coverage formula (`(2−scale)·camx ± vw/2`, worked example), the full-height layer-spreading rule, and the `--headless` null-texture guard.",
+   "kind": "command_ran",
+   "targets": [
+    "godot-game-dev",
+    "(2−scale)·camx ± vw/2",
+    "--headless"
+   ],
+   "verdict": "verified",
+   "evidence": "`godot-game-dev` in write; words of `(2−scale)·camx ± vw/2` in command (exit ok); `--headless` in write"
+  },
+  {
+   "i": 31,
+   "text": "`doodle-sprite-generator` cross-references the stdlib PNG-writer pattern to `godot-game-dev`.",
+   "kind": "command_ran",
+   "targets": [
+    "doodle-sprite-generator",
+    "godot-game-dev"
+   ],
+   "verdict": "verified",
+   "evidence": "`doodle-sprite-generator` in write; `godot-game-dev` in write"
+  },
+  {
+   "i": 32,
+   "text": "Verdict: after fixes — Approve.",
+   "kind": "other",
+   "targets": [],
+   "verdict": "unchecked",
+   "evidence": "nothing literal to check"
+  },
+  {
+   "i": 33,
+   "text": "All three claimed fixes verified live in the engine; the \"not full screen\" complaint is materially improved (drawn bands now span y 0–472 with full-width cloud/ridge coverage) and the remaining blank is the sky region, consistent with the palette design.",
+   "kind": "result_observed",
+   "targets": [
+    "472"
+   ],
+   "verdict": "verified",
+   "evidence": "`472` in output"
+  }
+ ],
+ "summary": {
+  "verified": 27,
+  "unverified": 0,
+  "pre_existing": 1,
+  "contradicted": 0,
+  "unchecked": 6,
+  "headline": "pre-existing"
+ },
+ "verifier": {
+  "name": "claimcheck",
+  "version": "0.1.0",
+  "rules_sha256": "41b5e5c2e9ef9808ebab443ba98444879fbc8fb4afbaddafcd7173b4a3489f8d",
+  "classifier": "none"
+ },
+ "privacy": "summary",
+ "id": "rcpt_5fc0c1354e1df219a040277a",
+ "signature": {
+  "alg": "ed25519",
+  "kid": "caaf50f9316357c5",
+  "sig": "iYbauQLHfc4TSgXjUweWrrk/7U8Zj/wB14npqQuv+qOiIUVk5cKx1+bVKC+NcDv2R8ncHRF/3qlMIKVEPsXRAw==",
+  "signed_at": "2026-09-27T04:07:04.678Z",
+  "canon": "jcs",
+  "pub": "eyfmX7NbX2DnMu0lx80obT20LNUSs5YKkKH5Dplq0XU="
+ }
+}

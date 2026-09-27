@@ -1,0 +1,438 @@
+<title>claimcheck</title>
+<meta name="description" content="Receipts for AI agent runs: what it touched, what it claimed, whether the two match. Checked by code, signed on your machine, verifiable by anyone.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F3F4F1; --paper:#FFFFFF; --paper-2:#F9F9F6; --ink:#15181D; --ink-2:#3A3F47; --muted:#6C727B; --rule:#E2E3DD; --rule-2:#C7C9C0;
+  --accent:#2340C8; --accent-ink:#FFFFFF; --accent-soft:#E7EBFB; --accent-line:#B9C4F2;
+  --ok:#25693A; --ok-soft:#E1F1E4; --warn:#8A5A00; --warn-soft:#FBF0D6; --pre:#9A3F0F; --pre-soft:#FCE6D8; --bad:#A31B1B; --bad-soft:#F9DEDE; --none:#6C727B; --none-soft:#ECEDE8;
+  --shadow:0 30px 60px -30px rgba(20,24,40,.45), 0 2px 0 rgba(20,24,40,.04);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif; --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark; --ground:#0F1115; --paper:#171A20; --paper-2:#1C2027; --ink:#E8E7E2; --ink-2:#C3C5C9; --muted:#9298A2; --rule:#2A2F38; --rule-2:#3D434E;
+  --accent:#8FA3FF; --accent-ink:#0B1233; --accent-soft:#1B2140; --accent-line:#33407A;
+  --ok:#8CD69A; --ok-soft:#18301F; --warn:#E9BB5F; --warn-soft:#332912; --pre:#F3A57C; --pre-soft:#3B2216; --bad:#F29B9B; --bad-soft:#3C1B1B; --none:#9298A2; --none-soft:#232830;
+  --shadow:0 30px 60px -30px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.04);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark; --ground:#0F1115; --paper:#171A20; --paper-2:#1C2027; --ink:#E8E7E2; --ink-2:#C3C5C9; --muted:#9298A2; --rule:#2A2F38; --rule-2:#3D434E;
+  --accent:#8FA3FF; --accent-ink:#0B1233; --accent-soft:#1B2140; --accent-line:#33407A;
+  --ok:#8CD69A; --ok-soft:#18301F; --warn:#E9BB5F; --warn-soft:#332912; --pre:#F3A57C; --pre-soft:#3B2216; --bad:#F29B9B; --bad-soft:#3C1B1B; --none:#9298A2; --none-soft:#232830;
+  --shadow:0 30px 60px -30px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.04);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding-block:0 80px;padding-inline:16px;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+code,kbd{font-family:var(--mono)}
+.wrap{max-width:1120px;margin:0 auto}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* nav */
+.nav{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:22px}
+.brand{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.03em;text-decoration:none;color:var(--ink);display:inline-flex;align-items:center;gap:8px}
+.brand i{width:14px;height:18px;border:2px solid var(--accent);border-bottom:0;position:relative;display:inline-block;border-radius:2px 2px 0 0}
+.brand i::after{content:"";position:absolute;left:-2px;right:-2px;bottom:-4px;height:6px;background:radial-gradient(circle at 3px 3px,transparent 2.2px,var(--accent) 2.4px) left bottom/6px 6px repeat-x}
+.nav-links{display:flex;gap:20px;font-size:14px;flex-wrap:wrap;justify-content:flex-end}
+.nav-links a{text-decoration:none;color:var(--muted)}
+.nav-links a:hover{color:var(--ink)}
+.nav-links a.pill{color:var(--accent);border:1px solid var(--accent-line);padding:5px 11px;border-radius:999px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;padding-block:48px 56px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(42px,6.2vw,78px);line-height:.98;letter-spacing:-.035em;margin:14px 0 20px;text-wrap:balance}
+h1 .u{color:var(--accent);text-decoration:underline;text-decoration-thickness:.06em;text-underline-offset:.08em;text-decoration-color:var(--accent-line)}
+.lede{font-size:19px;max-width:32em;color:var(--ink-2);margin:0 0 28px;text-wrap:pretty}
+.lede b{color:var(--ink);font-weight:600}
+.install{display:flex;align-items:stretch;max-width:540px;border:1px solid var(--rule-2);background:var(--paper);border-radius:8px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.install .p{padding:12px 0 12px 14px;color:var(--muted);font-family:var(--mono);font-size:14px;user-select:none}
+.install code{flex:1;font-size:14px;padding:12px 14px 12px 6px;white-space:nowrap;overflow-x:auto}
+.install button{border:0;border-left:1px solid var(--rule-2);background:var(--accent);color:var(--accent-ink);font:600 14px var(--body);padding:0 18px;cursor:pointer}
+.install button:hover{filter:brightness(1.07)}
+.alt{font-size:14px;color:var(--muted);margin:12px 0 0;max-width:34em}
+.alt code{font-size:13px;background:var(--none-soft);padding:1px 6px;border-radius:4px;color:var(--ink)}
+.proof{display:flex;gap:22px;flex-wrap:wrap;margin-top:30px;padding-top:22px;border-top:1px solid var(--rule)}
+.proof div b{display:block;font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+.proof div span{font-size:12.5px;color:var(--muted)}
+
+/* the receipt */
+.stage{position:relative}
+.sheet{position:relative;background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--accent);padding:22px clamp(16px,2.6vw,28px) 30px;box-shadow:var(--shadow);
+  --tear:radial-gradient(circle at 6px 0,transparent 5px,var(--paper) 5.5px);}
+.sheet::after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:8px;background:radial-gradient(circle at 6px -1px,transparent 5px,var(--paper) 5.5px) left top/12px 8px repeat-x}
+.sheet::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.06;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.35) 3px 4px);mix-blend-mode:multiply}
+:root[data-theme="dark"] .sheet::before{opacity:.05;mix-blend-mode:screen}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sheet::before{opacity:.05;mix-blend-mode:screen}}
+.sheet .row{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.sheet h2{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.15;margin:10px 0 4px;letter-spacing:-.015em;text-wrap:balance}
+.headline{font-family:var(--display);font-weight:500;font-size:15.5px;margin:0 0 14px}
+.headline.pre{color:var(--pre)} .headline.ok{color:var(--ok)}
+.counts{display:flex;flex-wrap:wrap;gap:6px 8px;font-family:var(--mono);font-size:11.5px;margin:0 0 14px;padding:0;list-style:none}
+.counts li{padding:3px 9px;border-radius:999px;background:var(--none-soft);color:var(--muted)}
+.counts li.ok{background:var(--ok-soft);color:var(--ok)} .counts li.pre{background:var(--pre-soft);color:var(--pre)} .counts li.bad{background:var(--bad-soft);color:var(--bad)} .counts li.warn{background:var(--warn-soft);color:var(--warn)}
+.claims{margin:0;padding:0;list-style:none;border-top:1px dashed var(--rule-2)}
+.claims li{display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;padding:11px 8px;margin-inline:-8px;border-bottom:1px dashed var(--rule);font-size:13.5px;border-radius:4px;transition:background .35s}
+.claims li.lit{background:var(--accent-soft)}
+.claims li.catch{background:var(--pre-soft)}
+.claims li.catch.lit{box-shadow:inset 0 0 0 1px var(--pre)}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;align-self:start;padding:3px 7px;border-radius:3px;white-space:nowrap;display:inline-block;transform-origin:50% 50%}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.pre{background:var(--pre-soft);color:var(--pre)} .tag.none{background:var(--none-soft);color:var(--none)} .tag.bad{background:var(--bad-soft);color:var(--bad)} .tag.warn{background:var(--warn-soft);color:var(--warn)}
+.stamp{animation:stamp .45s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes stamp{0%{transform:scale(1.5) rotate(-4deg);opacity:0}60%{transform:scale(.96) rotate(1deg);opacity:1}100%{transform:none}}
+.claims .t code{font-size:.93em;background:var(--none-soft);padding:0 4px;border-radius:3px}
+.claims .ev{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+.claims .ev code{font-size:1em;color:var(--ink-2);background:none;padding:0}
+.claims .ev .hit{color:var(--ok)}
+.claims li.catch .ev{color:var(--pre)}
+.sheet .foot{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:14px}
+.sheet .foot .sig{color:var(--accent)}
+.caption{font-size:13.5px;color:var(--muted);margin:22px 0 0;max-width:36em}
+.more{font:500 13px var(--body);color:var(--accent);background:none;border:0;padding:0;cursor:pointer;margin-top:10px}
+
+/* sections */
+section{padding-block:56px;border-top:1px solid var(--rule)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h2.big{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,46px);line-height:1.02;letter-spacing:-.03em;margin:0 0 16px;text-wrap:balance;max-width:19em}
+.prose{max-width:38em;font-size:17.5px;color:var(--ink-2)}
+.prose p{margin:0 0 14px}
+.prose b{color:var(--ink);font-weight:600}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
+
+/* chain diagram */
+.chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:10px;align-items:stretch;margin-top:28px}
+.ev-box{background:var(--paper);border:1px solid var(--rule);padding:12px 12px 10px;font-family:var(--mono);font-size:11.5px;position:relative;min-width:0}
+.ev-box .k{color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+.ev-box .c{color:var(--ink);margin:6px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-box .h{color:var(--accent);word-break:break-all;font-size:10.5px;line-height:1.35}
+.ev-box .h b{font-weight:600;color:var(--muted)}
+.ev-box::after{content:"→";position:absolute;right:-13px;top:50%;transform:translateY(-50%);color:var(--accent);font:600 14px var(--mono);background:var(--ground);padding:0 2px;z-index:1}
+.ev-box:nth-last-child(2)::after{content:"→"}
+.ev-rcpt{background:var(--accent);color:var(--accent-ink);padding:12px 14px;font-family:var(--mono);font-size:11.5px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:150px}
+.ev-rcpt b{font-family:var(--display);font-size:15px;letter-spacing:-.01em}
+
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;margin-top:34px}
+.step{border-top:2px solid var(--ink);padding-top:14px}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.step h3{font-family:var(--display);font-weight:700;font-size:21px;margin:6px 0 8px;letter-spacing:-.015em}
+.step p{margin:0;font-size:15px;color:var(--ink-2)}
+.step code{font-size:13px}
+
+/* verdict stamps */
+.stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:30px}
+.st{background:var(--paper);border:1px solid var(--rule);padding:18px 18px 16px;position:relative;overflow:hidden}
+.st .big-tag{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.02em;display:inline-block;padding:4px 10px;border:2px solid currentColor;border-radius:4px;transform:rotate(-2deg);margin:0 0 12px;text-transform:uppercase;font-size:15px;letter-spacing:.04em}
+.st.ok .big-tag{color:var(--ok)} .st.warn .big-tag{color:var(--warn)} .st.pre .big-tag{color:var(--pre)} .st.bad .big-tag{color:var(--bad)} .st.none .big-tag{color:var(--none)}
+.st p{margin:0;font-size:14.5px;color:var(--ink-2)}
+.st .ex{display:block;margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--muted);border-top:1px dashed var(--rule);padding-top:8px}
+
+/* verify widget */
+.verify{background:var(--paper);border:1px solid var(--rule);padding:clamp(18px,3vw,30px);margin-top:30px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px}
+.checks{list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:13.5px}
+.checks li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px dashed var(--rule);align-items:start}
+.checks .m{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--rule-2);display:grid;place-items:center;font-size:12px;color:var(--muted)}
+.checks li.pass .m{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.checks li.fail .m{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.checks li.skip .m{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.checks .d{color:var(--muted);font-size:12px;margin-top:3px;word-break:break-all;line-height:1.45}
+.drop{border:1.5px dashed var(--rule-2);border-radius:8px;padding:22px;text-align:center;color:var(--muted);font-size:14px;background:var(--paper-2)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop input{display:none}
+.drop label{color:var(--accent);cursor:pointer;font-weight:600}
+.vtitle{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 4px;letter-spacing:-.015em}
+.vsub{font-size:14px;color:var(--muted);margin:0 0 14px}
+.vbtn{margin-top:12px;border:1px solid var(--accent-line);background:var(--accent-soft);color:var(--accent);font:600 13px var(--body);padding:8px 12px;border-radius:6px;cursor:pointer}
+
+/* agents */
+.agents{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:30px}
+.agent{background:var(--paper);border:1px solid var(--rule);padding:16px 16px 14px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:start}
+.mono-tile{width:44px;height:44px;border-radius:8px;background:var(--ink);color:var(--ground);display:grid;place-items:center;font:700 15px var(--display);letter-spacing:-.04em}
+.agent h3{font-family:var(--display);font-size:17px;margin:0 0 4px;letter-spacing:-.01em}
+.agent p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.5}
+.agent code{font-size:12px;color:var(--ink);background:var(--none-soft);padding:1px 5px;border-radius:4px}
+.agent .live{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);margin-left:6px}
+
+/* trust */
+.trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:26px 36px;margin-top:30px}
+.trust h3{font-family:var(--display);font-size:18px;margin:0 0 6px;letter-spacing:-.01em}
+.trust p{margin:0;font-size:15px;color:var(--ink-2)}
+
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:30px}
+.who div{border-top:2px solid var(--ink);padding-top:12px}
+.who h3{font-family:var(--display);font-size:17.5px;margin:0 0 6px;letter-spacing:-.01em}
+.who p{margin:0;font-size:14.5px;color:var(--ink-2)}
+
+.cta{background:var(--ink);color:var(--ground);padding:36px clamp(18px,3vw,40px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;margin-top:56px;border-radius:4px}
+.cta h2{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,38px);margin:0 0 6px;letter-spacing:-.03em;line-height:1.02}
+.cta p{margin:0;font-size:15px;opacity:.75}
+.cta .install{max-width:none;background:var(--paper);border-color:transparent}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;color:var(--muted)}
+footer a{color:var(--muted);text-decoration:none}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);font:500 13px var(--body);padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+@media (max-width:900px){ .hero,.two,.verify{grid-template-columns:1fr} .hero{gap:34px} .steps{grid-template-columns:1fr} .cta{grid-template-columns:1fr} .chain{grid-template-columns:repeat(2,minmax(0,1fr))} .ev-box::after{display:none} .ev-rcpt{grid-column:1/-1} }
+@media (max-width:480px){ .claims li{grid-template-columns:1fr;gap:5px} .chain{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .stamp{animation:none} .claims li{transition:none} .toast{transition:none} }
+</style>
+
+<div class="wrap">
+  <nav class="nav">
+    <a class="brand" href="#top"><i aria-hidden="true"></i>claimcheck</a>
+    <div class="nav-links"><a href="#how">How it works</a><a href="#verdicts">Verdicts</a><a href="#verify">Verify one</a><a href="#agents">Agents</a><a href="#trust">Trust</a><a class="pill" href="#get">Install</a></div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div>
+      <div class="eyebrow">Receipts for AI agent runs</div>
+      <h1>Your agent says it's done.<br><span class="u">claimcheck</span> checks.</h1>
+      <p class="lede">Every time your agent finishes a turn you get a receipt: what it <b>touched</b> (commands, files, machines), what it <b>said</b> it did, and whether those two match. The check is plain code running against the tool log on your own machine, and the receipt gets signed there too. Nothing gets uploaded.</p>
+      <div class="install"><span class="p">$</span><code id="cmd">curl -fsSL https://claimcheck.cc/install.sh | sh</code><button type="button" class="copy" data-copy="cmd">Copy</button></div>
+      <p class="alt">That one line wires every agent it finds on the box. If you'd rather not touch a terminal, install the plugin and tell your agent <code>set up claimcheck</code>. It does the rest.</p>
+      <div class="proof">
+        <div><b>5</b><span>agents, one hook</span></div>
+        <div><b>~20 ms</b><span>per receipt, offline</span></div>
+        <div><b>0</b><span>bytes uploaded</span></div>
+        <div><b>ed25519</b><span>signed, verifiable by anyone</span></div>
+      </div>
+    </div>
+
+    <figure class="stage" style="margin:0">
+      <article class="sheet" id="sheet" aria-label="A real receipt">
+        <div class="row" id="r-row"><span>loading a real receipt…</span></div>
+        <h2 id="r-title">&nbsp;</h2>
+        <p class="headline" id="r-head">&nbsp;</p>
+        <ul class="counts" id="r-counts"></ul>
+        <ul class="claims" id="r-claims"></ul>
+        <div class="foot" id="r-foot"></div>
+      </article>
+      <figcaption class="caption" id="r-cap">This is a real receipt from one of my own agent runs (paths and hosts swapped out). Watch the stamps: the verifier walks the report one sentence at a time and looks for each literal in what the agent actually wrote, ran and saw.</figcaption>
+    </figure>
+  </header>
+
+  <section id="how">
+    <p class="kicker">How it works</p>
+    <div class="two">
+      <div>
+        <h2 class="big">The check runs on your machine. Only the receipt leaves it.</h2>
+        <div class="prose"><p>Your agent already has hooks. claimcheck listens to them, so every command, edit and result lands the moment it finishes, before anything gets truncated or compacted. Each event gets redacted and chained to the one before it by hash. When the turn ends, the final message gets split into sentences and every literal in them (a path, a command, a number) gets looked up in that chain.</p>
+        <p><b>No model gets asked for a verdict.</b> Same report plus same log gives you the same receipt, today and in five years.</p></div>
+      </div>
+      <div>
+        <div class="chain" aria-label="Hash-chained run log ending in a receipt">
+          <div class="ev-box"><div class="k">event 0 · terminal</div><div class="c">pytest -q tests/</div><div class="h"><b>prev</b> 000000…<br><b>hash</b> 9c41e2…</div></div>
+          <div class="ev-box"><div class="k">event 1 · write_file</div><div class="c">app/config.py</div><div class="h"><b>prev</b> 9c41e2…<br><b>hash</b> 5b0d77…</div></div>
+          <div class="ev-box"><div class="k">event 2 · read_file</div><div class="c">settings.yaml</div><div class="h"><b>prev</b> 5b0d77…<br><b>hash</b> e17ac0…</div></div>
+          <div class="ev-box"><div class="k">event 3 · terminal</div><div class="c">git push origin main</div><div class="h"><b>prev</b> e17ac0…<br><b>hash</b> 22f9b1…</div></div>
+          <div class="ev-rcpt"><b>receipt</b><span>chain head 22f9b1…</span><span>4 events · signed</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">1 · capture</div><h3>Every tool call, as it happens</h3><p>Claude Code, Codex, Gemini CLI, Cursor and Hermes all fire hooks already. claimcheck just listens. There's no proxy in the middle and no extra agent watching your agent.</p></div>
+      <div class="step"><div class="n">2 · check</div><h3>Claims against the log, by code</h3><p>A claim counts as verified when there's a write, a command that exited 0, or an output containing the literal. "Added X" when X was only ever read comes out as <em>pre-existing</em>. A named command that failed comes out as <em>contradicted</em>.</p></div>
+      <div class="step"><div class="n">3 · sign</div><h3>A receipt you can hand to anyone</h3><p>Counts, the ledger, every claim with its evidence, and an ed25519 signature from a key that was made on your machine. <code>claimcheck verify</code> proves the file was never edited. So does the box further down, right in your browser.</p></div>
+    </div>
+  </section>
+
+  <section id="verdicts">
+    <p class="kicker">Five verdicts</p>
+    <h2 class="big">It isn't trying to catch your agent lying. It's a record of what happened.</h2>
+    <div class="prose"><p>Agents get more accurate every month and I still want the receipt, for the same reason a cashier prints one. How much checking you need tracks <b>what's at stake</b>. The error rate barely comes into it. And the smarter the agent gets, the harder it is for a human to tell what it actually did.</p></div>
+    <div class="stamps">
+      <div class="st ok"><span class="big-tag">verified</span><p>The log contains what the sentence says.</p><span class="ex">"ran <code>pytest -q</code>, 9 passed" → command exited 0, output has 9 passed</span></div>
+      <div class="st warn"><span class="big-tag">unverified</span><p>Nothing in the log shows it.</p><span class="ex">"updated <code>docs/never.md</code>" → no write, command or output mentions it</span></div>
+      <div class="st pre"><span class="big-tag">pre-existing</span><p>Credit taken for something only read.</p><span class="ex">"added <code>window_width_override=1280</code>" → it was in the file it opened</span></div>
+      <div class="st bad"><span class="big-tag">contradicted</span><p>The log shows the opposite.</p><span class="ex">"pushed with <code>git push</code>" → that command exited 128</span></div>
+      <div class="st none"><span class="big-tag">unchecked</span><p>Nothing literal to check. Counts neither way.</p><span class="ex">"cleaned things up a bit"</span></div>
+    </div>
+  </section>
+
+  <section id="verify">
+    <p class="kicker">Verify one</p>
+    <h2 class="big">You don't have to take my word for it.</h2>
+    <div class="prose"><p>A receipt's id is the hash of its own content and the signature covers the id, so your browser can recompute both right now with nothing but the Web Crypto API. Drop any claimcheck receipt in here and watch.</p></div>
+    <div class="verify">
+      <div>
+        <p class="vtitle" id="v-title">The receipt above</p>
+        <p class="vsub" id="v-sub">Recomputed in this tab. Nothing is sent anywhere.</p>
+        <ul class="checks" id="checks">
+          <li id="c-shape"><span class="m">·</span><span>spec shape<span class="d" id="d-shape">claimcheck 0.1 · required members present</span></span></li>
+          <li id="c-id"><span class="m">·</span><span>content id<span class="d" id="d-id">sha-256 over the canonical document, minus id · signature · created_at</span></span></li>
+          <li id="c-sig"><span class="m">·</span><span>signature<span class="d" id="d-sig">ed25519 over the canonical document, minus signature</span></span></li>
+        </ul>
+        <button type="button" class="vbtn" id="v-again">Run again</button>
+      </div>
+      <div class="drop" id="drop">
+        <div><strong style="color:var(--ink)">Drop a receipt JSON here</strong></div>
+        <div style="margin-top:6px">or <label for="file">choose a file</label><input type="file" id="file" accept="application/json,.json"></div>
+        <div style="margin-top:10px;font-size:12.5px">Try editing one number in a receipt first: the id check fails on a single changed byte.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="agents">
+    <p class="kicker">Agents</p>
+    <h2 class="big">One hook command, and it speaks every agent that has hooks.</h2>
+    <div class="prose"><p>Claude Code's hook payload turned into the shape everyone else copies. claimcheck reads all of them, so you get the same receipt no matter which agent did the work. A team running three different agents ends up reading one format.</p></div>
+    <div class="agents">
+      <div class="agent"><div class="mono-tile">CC</div><div><h3>Claude Code<span class="live">live</span></h3><p><code>/plugin marketplace add CocaKova/claimcheck</code> then <code>/plugin install claimcheck@claimcheck</code>. Hooks are active at once; the plugin needs no install step.</p></div></div>
+      <div class="agent"><div class="mono-tile">H</div><div><h3>Hermes Agent<span class="live">live</span></h3><p>The one-liner above. <code>claimcheck init</code> links the bundled plugin into <code>~/.hermes/plugins/</code> and enables it. Native hooks: every run, every profile, cron and kanban workers included.</p></div></div>
+      <div class="agent"><div class="mono-tile">Cx</div><div><h3>Codex CLI</h3><p><code>claimcheck init</code> writes <code>~/.codex/hooks.json</code>. Same payload shape as Claude Code.</p></div></div>
+      <div class="agent"><div class="mono-tile">G</div><div><h3>Gemini CLI</h3><p><code>claimcheck init</code> wires <code>AfterTool</code> and <code>AfterAgent</code> in <code>~/.gemini/settings.json</code>.</p></div></div>
+      <div class="agent"><div class="mono-tile">Cu</div><div><h3>Cursor</h3><p><code>claimcheck init</code> writes <code>~/.cursor/hooks.json</code>: <code>postToolUse</code> and <code>afterAgentResponse</code>.</p></div></div>
+      <div class="agent"><div class="mono-tile">*</div><div><h3>Anything with hooks</h3><p>Pipe the hook's JSON to <code>claimcheck hook</code>. Copilot CLI, Cline and Windsurf payloads are already understood.</p></div></div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <p class="kicker">Trust</p>
+    <h2 class="big">Built so people who don't trust me can still check it.</h2>
+    <div class="trust">
+      <div><h3>Nothing leaves your machine</h3><p>The verifier runs inside the hook, in milliseconds, offline. There's no transcript upload anywhere. If you want a hosted page later, it only ever gets the signed receipt, at the privacy level you pick: full, summary, or hashes only.</p></div>
+      <div><h3>Redacted before hashing</h3><p>Passwords, tokens, keys and PEM blocks get stripped out of every event and out of the report before anything is hashed. You can re-verify a receipt years later without the secret ever existing again.</p></div>
+      <div><h3>Measured on real sessions</h3><p>12 real sessions are frozen as golden tests: 114 claims, every verdict hand traced back to the raw log, two real catches, zero false flags. Every false flag that shows up in the wild turns into a rule and a test.</p></div>
+      <div><h3>Open format</h3><p>Receipt spec v0.1 is a JSON Schema anyone can write a verifier or a viewer for. The hash chain, content id and signature are all standard primitives, which is why this page can verify one.</p></div>
+      <div><h3>Vendor independent</h3><p>No model vendor should be grading its own homework. claimcheck isn't made by any of them, and it isn't made for any one of them either.</p></div>
+      <div><h3>Fails open</h3><p>A receipt problem never touches your agent's turn. Every hook path exits 0 and anything that went wrong goes to a log you can read.</p></div>
+    </div>
+  </section>
+
+  <section id="who">
+    <p class="kicker">Who it's for</p>
+    <h2 class="big">For anyone who has to trust work they didn't watch.</h2>
+    <div class="who">
+      <div><h3>People running agents</h3><p>You asked for something and it said "done". Now you can see which parts of "done" the log actually backs up.</p></div>
+      <div><h3>Teams merging agent PRs</h3><p>A receipt on every agent PR, and a merge policy that can refuse anything with a contradicted claim in it.</p></div>
+      <div><h3>Agencies billing for agent work</h3><p>A branded monthly statement your client can actually read: what the robot did, verified and signed.</p></div>
+      <div><h3>Practices whose records matter</h3><p>A signed, tamper evident record of every action an AI took with your data, and it stays on your side of the wall.</p></div>
+    </div>
+  </section>
+
+  <div class="cta" id="get">
+    <div><h2>Start with one turn.</h2><p>Install it, open a new session, ask your agent for one thing that touches a tool, then run <code>claimcheck open</code>.</p></div>
+    <div class="install"><span class="p">$</span><code id="cmd2">curl -fsSL https://claimcheck.cc/install.sh | sh</code><button type="button" class="copy" data-copy="cmd2">Copy</button></div>
+  </div>
+
+  <footer>
+    <span>claimcheck</span><span>Receipt spec v0.1</span><span>Source and PyPI open at launch</span><span>Built in Austin</span>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite">Copied</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var toast=$('toast'),tt;
+  function show(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show')},1400);}
+  document.querySelectorAll('.copy').forEach(function(b){
+    b.addEventListener('click',function(){
+      var el=$(b.getAttribute('data-copy')),txt=el.textContent;
+      function fb(){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r);show('Selected: press copy');}
+      try{navigator.clipboard.writeText(txt).then(function(){show('Copied')},fb);}catch(e){fb();}
+    });
+  });
+
+  /* ---------- canonical form + hashing (mirrors the Python: sorted keys, no whitespace, UTF-8) ---------- */
+  function canon(o){
+    if(o===null||typeof o!=='object')return JSON.stringify(o);
+    if(Array.isArray(o))return '['+o.map(canon).join(',')+']';
+    return '{'+Object.keys(o).sort().map(function(k){return JSON.stringify(k)+':'+canon(o[k])}).join(',')+'}';
+  }
+  var enc=new TextEncoder();
+  function hex(buf){return Array.prototype.map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2)}).join('')}
+  function sha256(s){return crypto.subtle.digest('SHA-256',enc.encode(s)).then(hex)}
+  function b64(s){var bin=atob(s),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+  function without(o,keys){var c={};Object.keys(o).forEach(function(k){if(keys.indexOf(k)<0)c[k]=o[k]});return c}
+
+  function setCheck(id,state,detail){var li=$('c-'+id);li.className=state;li.querySelector('.m').textContent=state==='pass'?'✓':state==='fail'?'✕':state==='skip'?'–':'·';if(detail!=null)$('d-'+id).textContent=detail;}
+  var REQ=['claimcheck','id','created_at','run','capture','ledger','report','claims','summary','verifier','privacy'];
+  function verify(doc,label){
+    $('v-title').textContent=label;['shape','id','sig'].forEach(function(k){setCheck(k,'',null)});
+    var missing=REQ.filter(function(k){return !(k in doc)});
+    if(missing.length||doc.claimcheck!=='0.1'){setCheck('shape','fail',missing.length?'missing: '+missing.join(', '):'unknown spec version '+doc.claimcheck);}
+    else setCheck('shape','pass','claimcheck '+doc.claimcheck+' · '+doc.claims.length+' claims · '+doc.summary.headline);
+    return sha256(canon(without(doc,['id','signature','created_at']))).then(function(h){
+      var want='rcpt_'+h.slice(0,24);
+      if(want===doc.id)setCheck('id','pass',doc.id+' — recomputed and equal');
+      else setCheck('id','fail','document says '+doc.id+', content hashes to '+want+' — this file was edited');
+      var s=doc.signature;
+      if(!s){setCheck('sig','skip','unsigned receipt');return}
+      if(!s.pub){setCheck('sig','skip','no public key embedded; kid '+s.kid+' would need a key registry');return}
+      var pub=b64(s.pub);
+      return crypto.subtle.digest('SHA-256',pub).then(function(kh){
+        var kid=hex(kh).slice(0,16);
+        if(kid!==s.kid){setCheck('sig','fail','embedded key does not match kid '+s.kid);return}
+        if(!crypto.subtle.importKey){setCheck('sig','skip','Web Crypto unavailable here');return}
+        return crypto.subtle.importKey('raw',pub,{name:'Ed25519'},false,['verify']).then(function(key){
+          return crypto.subtle.verify({name:'Ed25519'},key,b64(s.sig),enc.encode(canon(without(doc,['signature']))));
+        }).then(function(ok){
+          if(ok)setCheck('sig','pass','valid · signed by '+s.kid+' at '+s.signed_at);
+          else setCheck('sig','fail','signature does not match this content (kid '+s.kid+')');
+        },function(){setCheck('sig','skip','this browser has no Ed25519 in Web Crypto (Chrome 137+, Safari 17+, Firefox 130+ do); id check above still stands');});
+      });
+    });
+  }
+
+  /* ---------- render the real receipt ---------- */
+  var CLS={'verified':'ok','unverified':'warn','pre-existing':'pre','contradicted':'bad','unchecked':'none'};
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function md(s){return esc(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*(.+?)\*\*/g,'$1')}
+  function evidence(e){return esc(e).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\b(in write|in command \(exit ok\)|in output|in external action)\b/g,'<span class="hit">$1</span>')}
+  var current=null,timer=null;
+  function render(doc){
+    current=doc;
+    var r=doc.run,S=doc.summary;
+    var when=(r.ended_at||doc.created_at||'').slice(0,10);
+    $('r-row').innerHTML='<span>receipt '+esc(doc.id.slice(0,13))+'…</span><span>'+esc(r.adapter)+' · '+esc(r.agent.platform||'')+'</span><span>'+esc(when)+'</span><span>'+esc(doc.ledger.tool_calls)+' tool calls</span>';
+    $('r-title').textContent=r.title||'Untitled run';
+    var head=S.headline;
+    $('r-head').className='headline '+(CLS[head]||'');
+    $('r-head').textContent=head==='pre-existing'?'One claim took credit for something the agent only read.':head==='verified'?'Every checkable claim is backed by the log.':head==='contradicted'?'A claim is contradicted by the log.':head==='unverified'?'A claim has nothing in the log behind it.':'Nothing literal to check.';
+    $('r-counts').innerHTML=[['ok',S.verified,'verified'],['warn',S.unverified,'unverified'],['pre',S.pre_existing,'pre-existing'],['bad',S.contradicted,'contradicted'],['none',S.unchecked,'unchecked']].filter(function(x){return x[1]>0}).map(function(x){return '<li class="'+x[0]+'">'+x[1]+' '+x[2]+'</li>'}).join('');
+    var flagged=doc.claims.filter(function(c){return c.verdict!=='verified'&&c.verdict!=='unchecked'});
+    var verified=doc.claims.filter(function(c){return c.verdict==='verified'});
+    var unchecked=doc.claims.filter(function(c){return c.verdict==='unchecked'});
+    var pick=[].concat(verified.slice(0,2),flagged.slice(0,1),verified.slice(2,4),unchecked.slice(0,1));
+    pick.sort(function(a,b){return a.i-b.i});
+    $('r-claims').innerHTML=pick.map(function(c){
+      var cls=CLS[c.verdict]||'none';
+      return '<li class="'+(cls==='pre'||cls==='bad'||cls==='warn'?'catch':'')+'" data-i="'+c.i+'"><span class="tag '+cls+'">'+esc(c.verdict)+'</span><span class="t">'+md(c.text.length>170?c.text.slice(0,168)+'…':c.text)+'<span class="ev">'+evidence(c.evidence.length>150?c.evidence.slice(0,148)+'…':c.evidence)+'</span></span></li>';
+    }).join('');
+    $('r-foot').innerHTML='<span>'+doc.claims.length+' claims split by code</span><span>every verdict from the tool log</span>'+(doc.signature?'<span class="sig">signed '+esc(doc.signature.kid.slice(0,8))+'… · valid</span>':'<span>unsigned</span>');
+    animate();
+  }
+  function animate(){
+    if(reduce)return;
+    clearInterval(timer);
+    var rows=Array.prototype.slice.call(document.querySelectorAll('#r-claims li')),i=0;
+    function step(){
+      rows.forEach(function(r){r.classList.remove('lit')});
+      var row=rows[i%rows.length];row.classList.add('lit');
+      var tag=row.querySelector('.tag');tag.classList.remove('stamp');void tag.offsetWidth;tag.classList.add('stamp');
+      i++; if(i>=rows.length*2){clearInterval(timer);setTimeout(function(){rows.forEach(function(r){r.classList.remove('lit')})},1400);}
+    }
+    step();timer=setInterval(step,1500);
+  }
+
+  fetch('demo-receipt.json').then(function(r){return r.json()}).then(function(doc){render(doc);return verify(doc,'The receipt above');}).catch(function(e){
+    $('r-row').innerHTML='<span>receipt unavailable in this preview</span>';$('r-title').textContent='Receipts render from a signed JSON file';
+    $('r-cap').textContent='This preview could not load the sample receipt file; the live site serves it next to the page.';
+    ['shape','id','sig'].forEach(function(k){setCheck(k,'skip','sample receipt not loaded')});
+  });
+
+  $('v-again').addEventListener('click',function(){if(current)verify(current,$('v-title').textContent)});
+  var drop=$('drop');
+  function take(file){
+    if(!file)return;
+    file.text().then(function(t){var d;try{d=JSON.parse(t)}catch(e){$('v-title').textContent=file.name;setCheck('shape','fail','not valid JSON');setCheck('id','',null);setCheck('sig','',null);return}
+      $('v-sub').textContent='Checked in this tab. Nothing was sent anywhere.';verify(d,file.name);});
+  }
+  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('over')})});
+  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('over')})});
+  drop.addEventListener('drop',function(e){take(e.dataTransfer.files&&e.dataTransfer.files[0])});
+  $('file').addEventListener('change',function(e){take(e.target.files&&e.target.files[0])});
+})();
+</script>
