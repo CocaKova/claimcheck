@@ -1,0 +1,16 @@
+#!/bin/sh
+# claimcheck hook shim for plugin installs (Claude Code / Codex / Gemini CLI extensions).
+# The plugin folder *is* the Python package, so no install step is needed: run it from here.
+# Never blocks or fails the agent: if there is no python3, swallow the payload and exit 0.
+here="$(cd "$(dirname "$0")/.." && pwd)"
+# an installed `claimcheck` (uv/pipx/pip) brings the verdict engine with it; prefer it, the plugin copy is ledger-only
+if command -v claimcheck >/dev/null 2>&1; then
+  exec claimcheck hook
+fi
+for py in python3 python; do
+  if command -v "$py" >/dev/null 2>&1; then
+    exec env PYTHONPATH="$here${PYTHONPATH:+:$PYTHONPATH}" "$py" -m claimcheck.cli hook
+  fi
+done
+cat >/dev/null
+exit 0

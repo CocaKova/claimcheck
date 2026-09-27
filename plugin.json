@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schema/plugin.json",
+  "name": "claimcheck",
+  "version": "0.1.2",
+  "description": "Receipts for AI agent runs. Ask your agent to \"set up claimcheck\": the bundled skill wires the agent's own hooks so every turn ends with a signed receipt of what was touched vs. what was claimed. Runs locally; nothing leaves the machine.",
+  "author": "CocaKova",
+  "homepage": "https://claimcheck.cc",
+  "repository": "https://github.com/CocaKova/claimcheck",
+  "license": "Apache-2.0",
+  "keywords": ["receipts", "verification", "audit", "attestation", "hooks"],
+  "extensions": {}
+}

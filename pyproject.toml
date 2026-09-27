@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claimcheck-receipts"  # PyPI "claimcheck" is an unrelated project; the command is still `claimcheck`
+version = "0.1.2"
+description = "Receipts for AI agent runs: what it touched, what it claimed, whether the two match."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = ["claimcheck-core>=0.1"]  # verdict engine (binary wheels); cryptography/PyNaCl optional, pure-Python signer built in
+
+[project.optional-dependencies]
+fast = ["cryptography>=41"]
+schema = ["jsonschema>=4"]
+test = ["pytest", "jsonschema>=4", "cryptography>=41"]
+
+[project.scripts]
+claimcheck = "claimcheck.cli:main"
+
+[tool.setuptools]
+packages = ["claimcheck", "claimcheck.hermes"]
+
+[tool.setuptools.package-dir]
+"claimcheck.hermes" = "hermes_plugin"  # the Hermes Agent plugin ships inside the wheel; `claimcheck init` links it into ~/.hermes/plugins/
+
+[tool.setuptools.package-data]
+"claimcheck.hermes" = ["plugin.yaml"]
