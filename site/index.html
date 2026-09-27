@@ -166,7 +166,7 @@ h2.big{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,46px)
 .cta{background:var(--ink);color:var(--ground);padding:36px clamp(18px,3vw,40px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;margin-top:56px;border-radius:4px}
 .cta h2{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,38px);margin:0 0 6px;letter-spacing:-.03em;line-height:1.02}
 .cta p{margin:0;font-size:15px;opacity:.75}
-.cta .install{max-width:none;background:var(--paper);border-color:transparent}
+.cta .install{max-width:none;background:var(--paper);border-color:transparent;color:var(--ink)}  /* the box is paper again inside the inverted band, so the text goes back to ink */
 footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;color:var(--muted)}
 footer a{color:var(--muted);text-decoration:none}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);font:500 13px var(--body);padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
