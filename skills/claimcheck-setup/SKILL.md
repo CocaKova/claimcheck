@@ -28,16 +28,29 @@ plain sentences. Never ask them to edit JSON.
    (If you are running inside a claimcheck plugin folder — there is a `bin/claimcheck-hook` next to this
    skill's parent folder — you may instead use that folder directly: `python3 -m claimcheck.cli` with
    `PYTHONPATH` set to the folder. Say so if you do.)
-3. Run `claimcheck init`. It finds every supported agent in the home folder and wires two hook lines into
-   each one's own settings file (backing the file up first). It prints one line per agent.
-4. Run `claimcheck doctor` and read it back to the person: which agents are wired, where receipts go.
-5. Tell them: "From your next turn on, every run gets a receipt. `claimcheck open` shows the latest;
-   `claimcheck flagged` lists the ones worth a look." Do not promise anything about turns that already happened.
+3. **Ask the person which model should review receipts. This step is required; do not skip it and do not
+   pick for them.** A review is a reading task (open the run log, find the line that settles a flagged
+   claim), so a small model is enough — and on a metered plan their agent's *default* model is often the
+   most expensive one. Say that in one sentence and ask. Suggest the smallest model on their plan (on
+   Claude Code, `haiku`). If they say "whatever you are" or name the big one, that is their call — pin it.
+   If they want to decide later, say reviews stay off until they do, and continue.
+4. Run `claimcheck init --review-model <their answer>` (plain `claimcheck init` if they deferred; add
+   `--review-agent <claude-code|codex|gemini|hermes>` when more than one agent is wired and they said which
+   should do the reviewing). It finds every supported agent in the home folder, wires two hook lines into
+   each one's own settings file (backing the file up first), pins the review model, and prints one line
+   per agent plus the review-model line. Later changes: `claimcheck config review.model <model>`.
+5. Run `claimcheck doctor` and read it back to the person: which agents are wired, where receipts go,
+   which model reviews run on.
+6. Tell them: "From your next turn on, every run gets a receipt. `claimcheck open` shows the latest;
+   `claimcheck flagged` lists the ones worth a look; `claimcheck review` gets a second opinion on those,
+   on <model> only." Do not promise anything about turns that already happened.
 
 ## Check
 
-`claimcheck doctor` — wired agents, receipt count, flagged count, the last hook error if any.
+`claimcheck doctor` — wired agents, receipt count, flagged count, the last hook error if any, the review model.
 `claimcheck flagged` — receipts whose headline is not "verified", newest first, with the evidence line.
+`claimcheck review` — reviews the flagged receipts that have no review yet, on the pinned model only (it
+refuses to run without one; `--dry-run` shows the exact command). `claimcheck config` shows the settings.
 `claimcheck open` — opens the newest receipt page in the browser (`claimcheck open <receipt-id>` for a specific one).
 `claimcheck verify <receipt.json>` — proves a receipt file was not edited (schema, content id, signature).
 

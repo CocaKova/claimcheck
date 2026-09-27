@@ -222,7 +222,9 @@ def _wire_hermes(*, remove: bool, dry_run: bool) -> str:
     return f"Hermes Agent: plugin {note}"
 
 
-def init(agents: list[str] | None = None, *, remove: bool = False, dry_run: bool = False) -> list[str]:
+def init(agents: list[str] | None = None, *, remove: bool = False, dry_run: bool = False,
+         review_model: str | None = None, review_agent: str | None = None, ask: bool = True) -> list[str]:
+    from . import config
     from .sign import KEY_FILE, keygen, kid, load_key, pub_raw
     targets = agents or detect()
     lines = []
@@ -238,7 +240,33 @@ def init(agents: list[str] | None = None, *, remove: bool = False, dry_run: bool
         keygen(KEY_FILE)
         lines.append(f"Signing key: {KEY_FILE} (id {kid(pub_raw(load_key()))}) — receipts from this machine carry it")
         lines.append(f"Receipts will appear in {HOME / 'receipts'} — `claimcheck open` shows the latest, `claimcheck flagged` lists the ones worth a look")
+        if review_agent:
+            config.put("review.agent", review_agent)
+        if review_model:
+            config.put("review.model", review_model)
+        elif ask and not config.get("review.model"):
+            picked = ask_review_model([t for t in targets if t in config.REVIEW_AGENTS])
+            if picked:
+                config.put("review.model", picked)
+        lines.append(config.review_model_line())
     return lines
+
+
+def ask_review_model(agents: list[str]) -> str | None:
+    """On a real terminal, ask the person once which model reviews should run on. Blank = leave unset.
+
+    Reviews read a log; they do not need the strongest model, and on a metered plan the agent's default is
+    often the dearest one. So the choice is theirs, made here, and never falls through to a default."""
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        return None
+    hint = "e.g. `haiku`" if "claude-code" in agents else "the smallest model on your plan"
+    print("\nclaimcheck reviews flagged receipts by reading the run log — a small model is enough, and it should")
+    print("never silently use your agent's default (often the most expensive one on a metered plan).")
+    try:
+        answer = input(f"Which model should reviews run on? ({hint}; blank = decide later) ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return None
+    return answer or None
 
 
 def doctor() -> list[str]:
@@ -261,6 +289,8 @@ def doctor() -> list[str]:
     if log.exists():
         errs = [l for l in log.read_text().splitlines()[-200:] if " ERROR " in l]
         lines.append(f"hook log: {log} · {len(errs)} error(s) in the last 200 lines" + (f" · last: {errs[-1][:160]}" if errs else ""))
+    from . import config
+    lines.append(config.review_model_line())
     return lines
 
 

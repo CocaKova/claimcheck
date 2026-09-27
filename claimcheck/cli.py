@@ -7,8 +7,10 @@
   claimcheck hook                        # stdin JSON from any agent's hook system → run log / receipt
   claimcheck flagged [--all] [--json]    # receipts whose headline is not verified (newest first)
   claimcheck chain <session-id>          # recompute the live run log's hash chain
-  claimcheck init [agent...] [--remove] [--dry-run]   # wire every agent found here (claude-code codex gemini cursor hermes)
-  claimcheck doctor                      # what is wired, how many receipts, any hook errors
+  claimcheck init [agent...] [--remove] [--dry-run] [--review-model M] [--review-agent A]   # wire every agent found here
+  claimcheck config [key [value|--unset]] # settings: review.model (the model reviews run on — pinned by the person), review.agent
+  claimcheck review [receipt-id|session] [--limit N] [--dry-run]   # second opinion on flagged receipts, on the pinned model only
+  claimcheck doctor                      # what is wired, how many receipts, any hook errors, the review model
   claimcheck open [receipt-id|session]   # open the latest (or named) receipt page in the browser
   claimcheck dump-fixture <hermes-session-id>
 """
@@ -115,7 +117,25 @@ def cmd_chain(a):
 
 def cmd_init(a):
     from .install import init
-    for line in init(a.agents or None, remove=a.remove, dry_run=a.dry_run):
+    for line in init(a.agents or None, remove=a.remove, dry_run=a.dry_run,
+                     review_model=a.review_model, review_agent=a.review_agent, ask=not a.no_input):
+        print(line)
+
+
+def cmd_config(a):
+    from . import config
+    if a.key and (a.value or a.unset):
+        config.put(a.key, None if a.unset else a.value)
+        print(f"{a.key} = {'unset' if a.unset else a.value}")
+    elif a.key:
+        print(config.get(a.key) or "NOT SET")
+    else:
+        print("\n".join(config.describe()))
+
+
+def cmd_review(a):
+    from .review import review
+    for line in review(a.which, limit=a.limit, dry_run=a.dry_run):
         print(line)
 
 
@@ -150,7 +170,15 @@ def main(argv=None):
     fl.add_argument("--limit", type=int, default=20); fl.set_defaults(f=cmd_flagged)
     c = sub.add_parser("chain"); c.add_argument("session_id"); c.set_defaults(f=cmd_chain)
     i = sub.add_parser("init"); i.add_argument("agents", nargs="*"); i.add_argument("--remove", action="store_true")
-    i.add_argument("--dry-run", action="store_true"); i.set_defaults(f=cmd_init)
+    i.add_argument("--dry-run", action="store_true")
+    i.add_argument("--review-model", metavar="MODEL", help="pin the model reviews run on (the person's choice; never the agent's default)")
+    i.add_argument("--review-agent", metavar="AGENT", help="which agent runs reviews: claude-code | codex | gemini | hermes")
+    i.add_argument("--no-input", action="store_true", help="never prompt on the terminal for the review model")
+    i.set_defaults(f=cmd_init)
+    cf = sub.add_parser("config"); cf.add_argument("key", nargs="?"); cf.add_argument("value", nargs="?")
+    cf.add_argument("--unset", action="store_true"); cf.set_defaults(f=cmd_config)
+    rv = sub.add_parser("review"); rv.add_argument("which", nargs="?"); rv.add_argument("--limit", type=int, default=3)
+    rv.add_argument("--dry-run", action="store_true"); rv.set_defaults(f=cmd_review)
     sub.add_parser("doctor").set_defaults(f=cmd_doctor)
     o = sub.add_parser("open"); o.add_argument("which", nargs="?"); o.set_defaults(f=cmd_open)
     d = sub.add_parser("dump-fixture"); d.add_argument("session_id"); d.set_defaults(f=lambda a: print(dump_fixture(a.session_id)))
