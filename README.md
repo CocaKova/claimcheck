@@ -32,12 +32,23 @@ again and leaves everything else as it was.
 ```
 claimcheck open        # the latest receipt, as a page
 claimcheck flagged     # receipts whose headline is not "verified", newest first, with the evidence
-claimcheck doctor      # what is wired, how many receipts, any hook errors
+claimcheck review      # a second opinion on the flagged ones, on the model you pinned — never your agent's default
+claimcheck doctor      # what is wired, how many receipts, any hook errors, which model reviews run on
 claimcheck verify <receipt.json>   # prove a receipt file was never edited (schema · content id · signature)
 ```
 
 Receipts live in `~/.claimcheck/receipts/<session>/<turn>.json` (+ `.html`). The live tool log per session is
 `~/.claimcheck/runs/<session>.jsonl`, hash-chained; `claimcheck chain <session>` recomputes it.
+
+## The review model is yours to pick
+
+Verdicts are code and need no model. A *review* — opening the run log to say whether a flag was right or a
+false flag — is a reading task, and a small model does it. On a metered plan your agent's default is often
+the most expensive one, so claimcheck never lets a review fall through to it: `init` asks you once (your
+agent asks you, if it is doing the setup), `claimcheck config review.model <model>` changes it, and
+`claimcheck review` refuses to run until one is pinned. Reviews land in `~/.claimcheck/reviews/<receipt-id>.md`
+and never touch the signed receipt. Each runner is read-only: Claude Code in plan mode, Codex in the
+read-only sandbox, Gemini in plan approval mode, Hermes in quiet one-shot chat.
 
 ## What a receipt says
 
@@ -81,7 +92,8 @@ accountability for agent work, the same way a till receipt is for a cashier.
 `hermes_plugin/review_bridge.py` is a no-agent cron: every flagged receipt becomes one kanban card for the
 agent's own profile (skill `claimcheck-review`) and a line in the Office room. The agent reviews its own
 receipt against the raw log and answers `verifier-right` or `false-flag` with the proof — false flags become
-verifier rules; the rest becomes the precision record.
+verifier rules; the rest becomes the precision record. The card runs on the pinned review model
+(`kanban create --model`) when one is set, else on the profile's own.
 
 ## Repo map
 

@@ -62,6 +62,20 @@ rule: <only for false-flag: what the verifier should have matched>
 """
 
 
+def review_model() -> str | None:
+    """The model the person pinned for reviews (`claimcheck config review.model`), else the profile's own.
+
+    Hermes runs the review card on its profile model unless told otherwise; a pinned model rides on
+    `kanban create --model` so a review never has to run on the biggest brain in the house."""
+    if os.environ.get("CLAIMCHECK_REVIEW_MODEL"):
+        return os.environ["CLAIMCHECK_REVIEW_MODEL"]
+    try:
+        from claimcheck import config
+        return config.get("review.model")
+    except Exception:  # pragma: no cover - old claimcheck without config
+        return None
+
+
 def _run(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run([HERMES, *args], capture_output=True, text=True, timeout=60)
 
@@ -92,9 +106,11 @@ def main() -> int:
         heads = sorted({d["summary"]["headline"] for _, d in picked})
         title = f"Receipt review: {len(picked)} flagged ({', '.join(heads)})"
         body = BODY.format(marker=MARKER, n=len(picked), digest="\n\n".join(digest(d, p) for p, d in picked))
+        model = review_model()
         r = subprocess.run([HERMES, "kanban", "create", title, "--assignee", ASSIGNEE, "--body-file", "-",
                             "--idempotency-key", key, "--skill", "claimcheck-review",
-                            "--max-runtime", "25m", "--created-by", "claimcheck", "--json"],
+                            "--max-runtime", "25m", "--created-by", "claimcheck", "--json",
+                            *(["--model", model] if model else [])],
                            input=body, capture_output=True, text=True, timeout=60)
         if r.returncode != 0:
             print(f"kanban create failed: {(r.stdout + r.stderr)[-300:]}", file=sys.stderr)
