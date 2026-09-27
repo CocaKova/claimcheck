@@ -31,14 +31,21 @@ plain sentences. Never ask them to edit JSON.
 3. **Ask the person which model should review receipts. This step is required; do not skip it and do not
    pick for them.** A review is a reading task (open the run log, find the line that settles a flagged
    claim), so a small model is enough — and on a metered plan their agent's *default* model is often the
-   most expensive one. Say that in one sentence and ask. Suggest the smallest model on their plan (on
-   Claude Code, `haiku`). If they say "whatever you are" or name the big one, that is their call — pin it.
-   If they want to decide later, say reviews stay off until they do, and continue.
-4. Run `claimcheck init --review-model <their answer>` (plain `claimcheck init` if they deferred; add
-   `--review-agent <claude-code|codex|gemini|hermes>` when more than one agent is wired and they said which
-   should do the reviewing). It finds every supported agent in the home folder, wires two hook lines into
-   each one's own settings file (backing the file up first), pins the review model, and prints one line
-   per agent plus the review-model line. Later changes: `claimcheck config review.model <model>`.
+   most expensive one. First run `claimcheck local`: it lists local model servers answering on this
+   machine (vLLM, Ollama, LM Studio, llama.cpp, Jan, LiteLLM). Then ask, in one sentence each:
+   - if something local answered: "You have <model> running at <url>; reviewing with it costs nothing.
+     Pin that, or a cloud model?" Lead with the free option.
+   - otherwise: suggest the smallest model on their plan (on Claude Code, `haiku`).
+   If they say "whatever you are" or name the big one, that is their call — pin it. If they want to decide
+   later, say reviews stay off until they do, and continue.
+4. Run `claimcheck init --review-model <their answer>`; for a local model add `--review-endpoint <url>`
+   (then reviews are one HTTP call to that server, no agent CLI in the loop); for a cloud model add
+   `--review-agent <claude-code|codex|gemini|hermes>` when more than one agent is wired and they said
+   which should do the reviewing. Plain `claimcheck init` if they deferred. It finds every supported agent
+   in the home folder, wires two hook lines into each one's own settings file (backing the file up first),
+   pins the review model, and prints one line per agent plus the review-model line. Later changes:
+   `claimcheck config review.model <model>`, `claimcheck config review.endpoint <url>`; a server that
+   wants a key: `claimcheck config review.api_key <key>` (stored 0600, never printed back in full).
 5. Run `claimcheck doctor` and read it back to the person: which agents are wired, where receipts go,
    which model reviews run on.
 6. Tell them: "From your next turn on, every run gets a receipt. `claimcheck open` shows the latest;

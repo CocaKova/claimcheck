@@ -47,8 +47,21 @@ false flag — is a reading task, and a small model does it. On a metered plan y
 the most expensive one, so claimcheck never lets a review fall through to it: `init` asks you once (your
 agent asks you, if it is doing the setup), `claimcheck config review.model <model>` changes it, and
 `claimcheck review` refuses to run until one is pinned. Reviews land in `~/.claimcheck/reviews/<receipt-id>.md`
-and never touch the signed receipt. Each runner is read-only: Claude Code in plan mode, Codex in the
-read-only sandbox, Gemini in plan approval mode, Hermes in quiet one-shot chat.
+and never touch the signed receipt.
+
+**Running a local model?** Then reviews are free and need no agent CLI at all. `claimcheck local` lists the
+servers answering on the usual ports (vLLM :8000, Ollama :11434, LM Studio :1234, llama.cpp :8080, Jan, LiteLLM);
+`init` offers the first one it finds before any cloud suggestion. Pin it with
+`claimcheck init --review-model <model> --review-endpoint http://127.0.0.1:8000/v1` (or the two `config` keys);
+the review is then one `chat/completions` call, and because a bare completion cannot open files, claimcheck
+inlines the evidence itself: the turn's run-log records, already redacted, the ones that mention the flagged
+literals first, under a size budget. A server that wants a key takes `claimcheck config review.api_key <key>`
+(file goes 0600, never echoed back in full). Wrong model name, server down, key missing, a reasoning model
+that thought and never answered: each comes back as one plain line saying what to change.
+
+Cloud or agent-routed reviews stay read-only: Claude Code in plan mode, Codex in the read-only sandbox
+(with `--oss` and the right local provider when the pinned endpoint is Ollama or LM Studio), Gemini in plan
+approval mode, Hermes in quiet one-shot chat.
 
 ## What a receipt says
 

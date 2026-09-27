@@ -223,8 +223,9 @@ def _wire_hermes(*, remove: bool, dry_run: bool) -> str:
 
 
 def init(agents: list[str] | None = None, *, remove: bool = False, dry_run: bool = False,
-         review_model: str | None = None, review_agent: str | None = None, ask: bool = True) -> list[str]:
-    from . import config
+         review_model: str | None = None, review_agent: str | None = None, review_endpoint: str | None = None,
+         ask: bool = True) -> list[str]:
+    from . import config, local
     from .sign import KEY_FILE, keygen, kid, load_key, pub_raw
     targets = agents or detect()
     lines = []
@@ -242,31 +243,58 @@ def init(agents: list[str] | None = None, *, remove: bool = False, dry_run: bool
         lines.append(f"Receipts will appear in {HOME / 'receipts'} — `claimcheck open` shows the latest, `claimcheck flagged` lists the ones worth a look")
         if review_agent:
             config.put("review.agent", review_agent)
+        if review_endpoint:
+            config.put("review.endpoint", review_endpoint)
+            if not config.get("review.agent"):
+                config.put("review.agent", "endpoint")
+        found = local.detect(config.get("review.api_key"))
         if review_model:
             config.put("review.model", review_model)
+            if not review_endpoint and not config.get("review.endpoint") and not config.get("review.agent"):
+                home = next((ep for ep in found if review_model in ep.models), None)   # a local model named without its URL
+                if home:
+                    config.put("review.endpoint", home.base); config.put("review.agent", "endpoint")
         elif ask and not config.get("review.model"):
-            picked = ask_review_model([t for t in targets if t in config.REVIEW_AGENTS])
+            picked = ask_review_model([t for t in targets if t in config.REVIEW_AGENTS], found)
             if picked:
-                config.put("review.model", picked)
+                model, ep = picked
+                config.put("review.model", model)
+                if ep:
+                    config.put("review.endpoint", ep.base); config.put("review.agent", "endpoint")
+        if not config.get("review.model"):
+            lines += local.lines(found)   # so an agent running this for someone can relay the free option
         lines.append(config.review_model_line())
     return lines
 
 
-def ask_review_model(agents: list[str]) -> str | None:
+def ask_review_model(agents: list[str], found: list) -> tuple[str, object] | None:
     """On a real terminal, ask the person once which model reviews should run on. Blank = leave unset.
 
     Reviews read a log; they do not need the strongest model, and on a metered plan the agent's default is
-    often the dearest one. So the choice is theirs, made here, and never falls through to a default."""
+    often the dearest one. So the choice is theirs, made here, and never falls through to a default. A local
+    server that answered is offered first: it costs nothing. Returns (model, Endpoint-or-None)."""
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         return None
-    hint = "e.g. `haiku`" if "claude-code" in agents else "the smallest model on your plan"
     print("\nclaimcheck reviews flagged receipts by reading the run log — a small model is enough, and it should")
     print("never silently use your agent's default (often the most expensive one on a metered plan).")
+    usable = [ep for ep in found if ep.models]
     try:
+        if usable:
+            ep, first = usable[0], usable[0].models[0]
+            for line in local.lines(found):
+                print(line)
+            answer = input(f"Enter = pin `{first}` at {ep.base} (free); or type a model name (local or cloud); or `later`: ").strip()
+            if answer.lower() == "later":
+                return None
+            if not answer:
+                return first, ep
+            home = next((e for e in usable if answer in e.models), None)
+            return answer, home
+        hint = "e.g. `haiku`" if "claude-code" in agents else "the smallest model on your plan"
         answer = input(f"Which model should reviews run on? ({hint}; blank = decide later) ").strip()
     except (EOFError, KeyboardInterrupt):
         return None
-    return answer or None
+    return (answer, None) if answer else None
 
 
 def doctor() -> list[str]:
@@ -289,8 +317,10 @@ def doctor() -> list[str]:
     if log.exists():
         errs = [l for l in log.read_text().splitlines()[-200:] if " ERROR " in l]
         lines.append(f"hook log: {log} · {len(errs)} error(s) in the last 200 lines" + (f" · last: {errs[-1][:160]}" if errs else ""))
-    from . import config
+    from . import config, local
     lines.append(config.review_model_line())
+    if not config.get("review.model") or config.effective_agent() == "endpoint":
+        lines += local.lines(local.detect(config.get("review.api_key")))
     return lines
 
 
