@@ -172,7 +172,7 @@ footer a{color:var(--muted);text-decoration:none}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);font:500 13px var(--body);padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 
-@media (max-width:900px){ .hero,.two,.verify{grid-template-columns:1fr} .hero{gap:34px} .steps{grid-template-columns:1fr} .cta{grid-template-columns:1fr} .chain{grid-template-columns:repeat(2,minmax(0,1fr))} .ev-box::after{display:none} .ev-rcpt{grid-column:1/-1} }
+@media (max-width:900px){ .hero,.two,.verify{grid-template-columns:minmax(0,1fr)} .hero{gap:34px} .steps{grid-template-columns:1fr} .cta{grid-template-columns:1fr} .chain{grid-template-columns:repeat(2,minmax(0,1fr))} .ev-box::after{display:none} .ev-rcpt{grid-column:1/-1} }
 @media (max-width:480px){ .claims li{grid-template-columns:1fr;gap:5px} .chain{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .stamp{animation:none} .claims li{transition:none} .toast{transition:none} }
 </style>
