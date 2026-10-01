@@ -27,3 +27,4 @@ packages = ["claimcheck", "claimcheck.hermes"]
 
 [tool.setuptools.package-data]
 "claimcheck.hermes" = ["plugin.yaml"]
+"claimcheck" = ["receipt-v0.1.schema.json"]

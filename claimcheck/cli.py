@@ -30,7 +30,7 @@ from .engine import extract_claims, verify as verify_claim
 from .ledger import build_ledger, dump_fixture, load
 
 OUT_DIR = Path(os.environ.get("RECEIPT_OUT", os.environ.get("CLAIMCHECK_OUT", "receipts")))
-SCHEMA = Path(__file__).resolve().parent.parent / "spec" / "receipt-v0.1.schema.json"
+SCHEMA = Path(__file__).resolve().parent / "receipt-v0.1.schema.json"  # shipped in the wheel; spec/ links here
 
 
 def make_receipt(sid: str, *, fixture=False, classify="none", privacy="full", sign=False, adapter="hermes") -> dict:
