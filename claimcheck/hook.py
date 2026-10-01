@@ -214,12 +214,13 @@ def finish_turn(n: dict, *, privacy: str = "full", sign: bool = True, chatty: bo
     final = redact(n["final"] or "")
     L_all = ledger_from_events(all_events)
     L_turn = ledger_from_events(list(turn_events)) if turn_events is not all_events else L_all
+    asked = n["asked"] or recall_prompt(sid)
+    L_all["inputs"] = [redact(asked)] if asked else []   # what it was given backs claims about its input, never work
     claims = extract_claims(final, use_llm=False) if final else []
     for c in claims:
         c["verdict"], c["evidence"] = verify_claim(c, L_all)
     started = turn_events[0]["ts"] if turn_events else time.time()
     session = {"id": sid, "model": n["model"], "source": n["platform"], "started_at": started, "ended_at": time.time()}
-    asked = n["asked"] or recall_prompt(sid)
     msgs = [{"role": "user", "content": asked, "tool_calls": None}, {"role": "assistant", "content": final, "tool_calls": None}]
     doc = build(session, msgs, L_turn, claims, adapter=n["platform"], platform=n["platform"], classifier="none",
                 privacy=privacy, turn_id=tid, capture={"mode": "live", "chain_head": log.head(),
