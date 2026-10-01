@@ -178,6 +178,7 @@ def make_run_receipt(session_id: str, turn: dict | None, *, turn_id=None, model=
             session[k] = row[k]
     L_all = ledger_from_events(all_events)          # claims may refer to earlier turns of the same session
     L_turn = ledger_from_events(list(turn_events)) if turn_events is not all_events else L_all
+    L_all["inputs"] = [redact(asked)] if asked else []   # a cron job's prompt + injected script output; never proves work
     claims = extract_claims(redact(final), use_llm=False) if final else []
     for c in claims:
         c["verdict"], c["evidence"] = verify_claim(c, L_all)
