@@ -26,23 +26,63 @@ PATH_RE = re.compile(r"(?:~(?=/)|/home/\w+|/tmp|/etc|/opt|/var|/Users/\w+)[\w./+
 
 # ---------- redaction ----------
 
-SECRET_RES = [
-    re.compile(r"((?:password|passwd|pwd|secret|token|api[_-]?key|apikey|auth|authorization|bearer)[\w-]*\s*[=:]\s*['\"]?)([^\s'\"\\,;}]{8,})", re.I),
-    re.compile(r"\b(sk|rk|pk)-[A-Za-z0-9_-]{12,}"),
-    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}"),
-    re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
-    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+_QUOTE = r"""(?:\\?["'])?"""  # an optional quote, JSON-escaped when the text is a dumped tool call
+
+# (name or lead-in, value): the value goes, the lead-in stays so the receipt still says WHAT was set.
+NAMED_SECRET_RES = [
+    # password: x · "api_key": "x" · client_secret=x · Authorization: x
+    re.compile(r"((?:password|passwd|pwd|secret|token(?!s)|api[_-]?key|apikey|auth(?!or)|authorization|bearer)[\w-]*\\?[\"']?\s*[=:]\s*" + _QUOTE + r")([^\s'\"\\,;}]{8,})", re.I),
+    # env-style names the word list misses: STRIPE_KEY= · MY_PASS= · SENTRY_DSN= · BW_SESSION=
+    re.compile(r"(\b[A-Z][A-Z0-9_]*_(?:KEY|PASS|PASSWORD|PASSWD|PWD|SECRET|TOKEN|PAT|CREDENTIALS?|DSN|SESSION)\\?[\"']?\s*[=:]\s*" + _QUOTE + r")([^\s'\"\\,;}]{6,})"),
+    # --password hunter2 · --token x (the `=` form is caught above)
+    re.compile(r"(--(?:password|passwd|token|auth-token|api-key|apikey|secret|client-secret)\s+" + _QUOTE + r")([^\s'\"\\]{6,})", re.I),
+    re.compile(r"(\bsshpass\s+-p\s*" + _QUOTE + r")([^\s'\"\\]+)"),
+    re.compile(r"(\bmysql(?:dump|admin)?\b[^\n|;&]*?\s-p)([^\s'\"\\]{4,})"),
+    # scheme://user:PASSWORD@host
+    re.compile(r"(\b[a-z][a-z0-9+.-]*://[^/\s:@'\"\\]*:)([^@\s/'\"\\]{3,})(?=@)", re.I),
+    # Authorization: Bearer x · Basic x · Token x (a credential has a digit or symbol; "Basic authentication" stays)
+    re.compile(r"(\b(?:Bearer|Basic|Token)\s+)((?=[^\s'\"\\]*[0-9+/=_-])[A-Za-z0-9._~+/=-]{12,})"),
+    # webhook URLs are the secret themselves
+    re.compile(r"(hooks\.slack\.com/services/)([A-Za-z0-9/_-]{8,})"),
+    re.compile(r"(discord(?:app)?\.com/api/webhooks/\d+/)([A-Za-z0-9_-]{8,})"),
+]
+
+# values that are a secret on sight, whatever surrounds them
+TOKEN_RES = [
+    re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}"),            # OpenAI, Anthropic (sk-ant-…), generic
+    re.compile(r"\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{10,}"),   # Stripe secret / restricted keys
+    re.compile(r"\bwhsec_[A-Za-z0-9]{10,}"),                     # Stripe webhook secret
+    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}"),                 # GitHub
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"),
+    re.compile(r"\bglpat-[A-Za-z0-9_-]{15,}"),                   # GitLab
+    re.compile(r"\bnpm_[A-Za-z0-9]{30,}"),
+    re.compile(r"\bhf_[A-Za-z0-9]{20,}"),                        # Hugging Face
+    re.compile(r"\bAIza[0-9A-Za-z_-]{30,}"),                     # Google API
+    re.compile(r"\bxox[abeprs]-[A-Za-z0-9-]{10,}"),              # Slack
+    re.compile(r"\btskey-[a-z]+-[A-Za-z0-9-]{10,}"),             # Tailscale
+    re.compile(r"\btk_[A-Za-z0-9]{20,}"),                        # ntfy
+    re.compile(r"\b\d{8,10}:AA[A-Za-z0-9_-]{30,}"),              # Telegram bot
+    re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"),                # AWS
+    re.compile(r"\bAGE-SECRET-KEY-1[0-9A-Z]{50,}"),
+    re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),  # JWT
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", re.S),
 ]
+SECRET_RES = NAMED_SECRET_RES + TOKEN_RES
+
+_PLACEHOLDER = ("$", "<", "...", "…", "***", "[REDACTED]", "%", "{{", "/", "~/", "./")  # a path to a secret file is not the secret
+
+
+def _keep_name(m: re.Match) -> str:
+    return m.group(0) if m.group(2).startswith(_PLACEHOLDER) else m.group(1) + "[REDACTED]"
 
 
 def redact(text: str) -> str:
     """Secrets seen in tool logs must never reach a receipt (or a fixture). Key names stay, values go."""
     if not text:
         return text
-    text = SECRET_RES[0].sub(lambda m: m.group(0) if m.group(2).startswith(("$", "<", "...", "…", "***")) else m.group(1) + "[REDACTED]", text)
-    for rx in SECRET_RES[1:]:
+    for rx in NAMED_SECRET_RES:
+        text = rx.sub(_keep_name, text)
+    for rx in TOKEN_RES:
         text = rx.sub("[REDACTED]", text)
     return text
 

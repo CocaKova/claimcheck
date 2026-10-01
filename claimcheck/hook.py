@@ -282,6 +282,7 @@ def main(argv=None) -> int:
     """Entry for `claimcheck hook`. Reads one JSON object from stdin; always exits 0."""
     try:
         HOME.mkdir(parents=True, exist_ok=True)
+        HOME.chmod(0o700)  # run logs and receipts are this user's business, not every local account's
         logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     except OSError:
         pass
