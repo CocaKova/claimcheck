@@ -49,6 +49,14 @@ def _lock(session_id: str, path: Path):
                 fcntl.flock(lf, fcntl.LOCK_UN)
 
 
+def _witness_on() -> bool:
+    try:
+        from . import cloud
+        return cloud.witness_on()
+    except Exception:  # a broken config never stops capture
+        return False
+
+
 def _safe_id(session_id: str) -> str:
     return "".join(c if c.isalnum() or c in "._-" else "_" for c in str(session_id))[:200] or "unknown"
 
@@ -94,6 +102,12 @@ class RunLog:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
+            witness = _witness_on()
+            if witness:
+                from . import cloud
+                cloud.queue(self.session_id, rec)    # under the log's lock: the queue stays in chain order
+        if witness:
+            cloud.kick()
         return rec
 
     def _tail(self) -> tuple[int, str]:

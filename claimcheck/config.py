@@ -22,9 +22,16 @@ KEYS: dict[str, tuple[tuple[str, ...], str]] = {
     "review.agent": (("CLAIMCHECK_REVIEW_AGENT",), "what runs reviews: endpoint (direct HTTP to a local/OpenAI-compatible server) | claude-code | codex | gemini | hermes"),
     "review.endpoint": (("CLAIMCHECK_REVIEW_ENDPOINT", "RECEIPT_LLM_URL"), "base URL of an OpenAI-compatible server for reviews, e.g. http://127.0.0.1:8000/v1 (local = costs nothing)"),
     "review.api_key": (("CLAIMCHECK_REVIEW_API_KEY",), "API key for review.endpoint, only if the server wants one"),
+    "cloud.key": (("CLAIMCHECK_CLOUD_KEY",), "claimcheck.cc API key (`claimcheck login`); unset = nothing leaves this machine"),
+    "cloud.url": (("CLAIMCHECK_CLOUD_URL",), "hosted service, default https://claimcheck.cc"),
+    "cloud.witness": (("CLAIMCHECK_WITNESS",), "on | off: send each event's fingerprint (hashes only) as a run happens"),
+    "cloud.share": (("CLAIMCHECK_SHARE",), "off | flagged | all: share receipts automatically after each run"),
+    "cloud.privacy": (("CLAIMCHECK_SHARE_PRIVACY",), "summary | full | hashes: what a shared receipt shows (default summary)"),
 }
+CHOICES = {"cloud.witness": ("on", "off"), "cloud.share": ("off", "flagged", "all"),
+           "cloud.privacy": ("summary", "full", "hashes")}
 REVIEW_AGENTS = ("endpoint", "claude-code", "codex", "gemini", "hermes")
-SECRET_KEYS = ("review.api_key",)
+SECRET_KEYS = ("review.api_key", "cloud.key")
 
 
 def load() -> dict:
@@ -41,7 +48,7 @@ def save(cfg: dict) -> None:
     tmp = FILE.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(cfg, indent=2) + "\n")
     os.replace(tmp, FILE)
-    if "review" in cfg and cfg["review"].get("api_key"):
+    if (cfg.get("review") or {}).get("api_key") or (cfg.get("cloud") or {}).get("key"):
         try:
             os.chmod(FILE, 0o600)
         except OSError:
@@ -79,6 +86,8 @@ def put(key: str, value: str | None) -> dict:
     _check(key)
     if value is not None:
         value = str(value).strip() or None
+    if key in CHOICES and value and value not in CHOICES[key]:
+        raise SystemExit(f"{key} must be one of {', '.join(CHOICES[key])}")
     if key == "review.agent" and value and value not in REVIEW_AGENTS:
         raise SystemExit(f"review.agent must be one of {', '.join(REVIEW_AGENTS)}")
     if key == "review.endpoint" and value:

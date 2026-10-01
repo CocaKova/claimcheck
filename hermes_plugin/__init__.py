@@ -3,7 +3,7 @@
 post_tool_call  → append the call to the session's hash-chained run log (before storage truncation)
 post_llm_call   → remember the turn's final report and the user's request
 on_session_end  → split the report into claims, check each against the run log, sign, write
-                  ~/.claimcheck/receipts/<session>/<turn>.json + .html; POST to api_url if configured
+                  ~/.claimcheck/receipts/<session>/<turn>.json + .html; then claimcheck.cc if logged in (cloud.py)
 subagent_stop   → fold the child's tool history into the parent's chain (metadata only; Hermes passes no args)
 
 Everything is best-effort and fails open: a receipt problem never touches the agent's turn.
@@ -38,7 +38,6 @@ from claimcheck.engine import extract_claims, verify as verify_claim  # noqa: E4
 from claimcheck.ledger import DB, ledger_from_events, load as load_stored, events_from_messages, redact  # noqa: E402
 
 RECEIPTS = HOME / "receipts"
-OUTBOX = HOME / "outbox"
 
 _turns: dict[str, dict] = {}       # session_id → {turn_id, asked, final, model, platform, started}
 _turn_started: dict[tuple, float] = {}
@@ -119,9 +118,7 @@ def on_session_end(*, session_id=None, turn_id=None, completed=None, failed=None
         S = doc["summary"]
         logger.info("claimcheck: %s · %s verified · %s unverified · %s pre-existing · %s contradicted · %s → %s",
                     doc["id"], S["verified"], S["unverified"], S["pre_existing"], S["contradicted"], S["headline"], path)
-        api = _settings.get("api_url")
-        if api:
-            threading.Thread(target=_upload, args=(api, doc, path), daemon=True).start()
+        threading.Thread(target=_after, args=(doc, path), daemon=True).start()   # witness flush + share, off the turn
     except Exception as e:
         logger.warning("claimcheck: receipt failed for %s: %s", session_id, e)
 
@@ -200,20 +197,14 @@ def make_run_receipt(session_id: str, turn: dict | None, *, turn_id=None, model=
     return doc, path
 
 
-def _upload(api: str, doc: dict, path: Path):
-    import urllib.request
+def _after(doc: dict, path: Path) -> None:
     try:
-        req = urllib.request.Request(api.rstrip("/") + "/v1/receipts", data=json.dumps(doc).encode(),
-                                     headers={"Content-Type": "application/json", "User-Agent": "claimcheck-hermes/0.1"}, method="POST")
-        tok = os.environ.get("CLAIMCHECK_TOKEN")
-        if tok:
-            req.add_header("Authorization", f"Bearer {tok}")
-        with urllib.request.urlopen(req, timeout=10) as r:
-            logger.info("claimcheck: uploaded %s → %s", doc["id"], r.headers.get("Location") or r.status)
-    except Exception as e:
-        OUTBOX.mkdir(parents=True, exist_ok=True)
-        (OUTBOX / path.name).write_text(json.dumps(doc))
-        logger.warning("claimcheck: upload failed (%s); queued in %s", e, OUTBOX)
+        from claimcheck.cloud import after_receipt
+        link = after_receipt(doc, path)
+        if link:
+            logger.info("claimcheck: shared %s → %s", doc["id"], link)
+    except Exception as e:  # sharing is a convenience; the local receipt stands
+        logger.warning("claimcheck: cloud: %s", e)
 
 
 # ---------- entry ----------
@@ -223,7 +214,6 @@ def register(ctx) -> None:
         "privacy": _cfg(ctx, "privacy", os.environ.get("CLAIMCHECK_PRIVACY", "full")),
         "skip_platforms": _cfg(ctx, "skip_platforms", _env_list("CLAIMCHECK_SKIP_PLATFORMS", [])),
         "receipt_chatty": _cfg(ctx, "receipt_chatty", False),
-        "api_url": _cfg(ctx, "api_url", os.environ.get("CLAIMCHECK_API_URL")),
     })
     ctx.register_hook("post_tool_call", on_post_tool_call)
     ctx.register_hook("post_llm_call", on_post_llm_call)

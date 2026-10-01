@@ -18,9 +18,11 @@ def iter_receipts(root: Path | None = None, newest_first: bool = True):
     paths = sorted(root.glob("*/*.json"), key=lambda p: p.stat().st_mtime, reverse=newest_first)
     for p in paths:
         try:
-            yield p, json.loads(p.read_text())
+            d = json.loads(p.read_text())
         except (OSError, ValueError):
             continue
+        if isinstance(d, dict) and "id" in d and "run" in d:   # receipts only, not sidecars (.shared)
+            yield p, d
 
 
 def is_flagged(doc: dict) -> bool:

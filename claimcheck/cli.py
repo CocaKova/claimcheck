@@ -1,6 +1,7 @@
 """claimcheck CLI.
 
   claimcheck scrub [--dry-run]
+  claimcheck login <key> · share [receipt] · unshare <link> · history · dashboard · logout
   claimcheck receipt <hermes-session-id> [--fixture] [--classify none|local] [--privacy full|summary|hashes] [--sign] [--out DIR] [--md]
   claimcheck page <receipt.json> [--name NAME] > page.html
   claimcheck verify <receipt.json>
@@ -180,6 +181,85 @@ def cmd_open(a):
     print(open_latest(a.which))
 
 
+def _pick(which: str | None):
+    """A receipt by path, id, session id or (default) the newest."""
+    from .store import iter_receipts
+    if which and Path(which).is_file():
+        return Path(which), json.loads(Path(which).read_text())
+    for p, d in iter_receipts():
+        if not which or which in (d["id"], d["run"]["session_id"]):
+            return p, d
+    sys.exit(f"no receipt matches {which!r}" if which else "no receipts yet")
+
+
+def cmd_login(a):
+    from . import cloud, config
+    key = a.key or (input("claimcheck.cc API key: ").strip() if sys.stdin.isatty() else "")
+    if not key.startswith("cck_"):
+        sys.exit("an API key starts with cck_ (it's on your thanks page, or in the email we sent you)")
+    url = (a.url or cloud.base_url()).rstrip("/")
+    code, me = cloud.api("GET", "/v1/me", api_key=key, url=url)
+    if code != 200:
+        sys.exit(me.get("error") or f"claimcheck.cc said {code}")
+    config.put("cloud.key", key)
+    if a.url:
+        config.put("cloud.url", url)
+    print(f"logged in to {url} as {me['email'] or me['account']} · plan {me['plan']}\n"
+          "witness: on — each step's fingerprint (hashes only, never content) goes to claimcheck.cc as it happens\n"
+          "share:   off — `claimcheck share` shares the latest receipt; `claimcheck config cloud.share flagged|all` automates it")
+
+
+def cmd_logout(a):
+    from . import config
+    config.put("cloud.key", None)
+    print("logged out: nothing leaves this machine now")
+
+
+def cmd_share(a):
+    from . import cloud
+    if not cloud.key():
+        sys.exit("not logged in: claimcheck login <key>")
+    p, d = _pick(a.which)
+    code, out = cloud.share(d, a.privacy)
+    if code != 200:
+        sys.exit(out.get("error") or f"claimcheck.cc said {code}")
+    p.with_suffix(".shared").write_text(json.dumps(out))
+    witness = {"witnessed": "witnessed live", "late": "witnessed late", "partial": "partly witnessed",
+               "rewritten": "LOG REWRITTEN after witnessing", "none": "not witnessed"}.get(out.get("witness"), out.get("witness"))
+    print(f"{out['url']}\n{d['summary']['headline']} · {witness}"
+          + (f" · link expires {out['expires_at'][:10]}" if out.get("expires_at") else ""))
+
+
+def cmd_unshare(a):
+    from . import cloud
+    token = a.link.rstrip("/").rsplit("/", 1)[-1]
+    code, out = cloud.api("DELETE", f"/v1/receipts/{token}")
+    print("unshared: the link no longer opens" if code == 200 else (out.get("error") or f"not found ({code})"))
+
+
+def cmd_history(a):
+    from . import cloud
+    code, out = cloud.api("GET", "/v1/receipts")
+    if code != 200:
+        sys.exit(out.get("error") or f"claimcheck.cc said {code}")
+    rows = out["receipts"][: a.limit]
+    for r in rows:
+        print(f"{r['shared_at'][:16].replace('T', ' ')}  {r['url']}\n    {r['headline']}")
+    if not rows:
+        print("nothing shared yet: claimcheck share")
+
+
+def cmd_dashboard(a):
+    import webbrowser
+    from . import cloud
+    code, out = cloud.api("POST", "/v1/link", {})
+    if code != 200:
+        sys.exit(out.get("error") or f"claimcheck.cc said {code}")
+    print(out["url"] + "\n(sign-in link, good for 30 minutes)")
+    with __import__("contextlib").suppress(Exception):
+        webbrowser.open(out["url"])
+
+
 def cmd_scrub(a):
     from .capture import HOME
     from .scrub import scrub
@@ -222,6 +302,16 @@ def main(argv=None):
     rv = sub.add_parser("review"); rv.add_argument("which", nargs="?"); rv.add_argument("--limit", type=int, default=3)
     rv.add_argument("--dry-run", action="store_true"); rv.set_defaults(f=cmd_review)
     sub.add_parser("doctor").set_defaults(f=cmd_doctor)
+    lg = sub.add_parser("login", help="connect this machine to claimcheck.cc (witness + sharing)")
+    lg.add_argument("key", nargs="?"); lg.add_argument("--url"); lg.set_defaults(f=cmd_login)
+    sub.add_parser("logout").set_defaults(f=cmd_logout)
+    sh = sub.add_parser("share", help="share a receipt as a claimcheck.cc link (default: the newest)")
+    sh.add_argument("which", nargs="?"); sh.add_argument("--privacy", choices=["summary", "full", "hashes"])
+    sh.set_defaults(f=cmd_share)
+    us = sub.add_parser("unshare"); us.add_argument("link"); us.set_defaults(f=cmd_unshare)
+    hi = sub.add_parser("history", help="receipts you've shared"); hi.add_argument("--limit", type=int, default=20)
+    hi.set_defaults(f=cmd_history)
+    sub.add_parser("dashboard", help="open your shared receipts in the browser").set_defaults(f=cmd_dashboard)
     sc = sub.add_parser("scrub", help="re-apply the current redaction rules to run logs and receipts already on disk")
     sc.add_argument("--dry-run", action="store_true"); sc.set_defaults(f=cmd_scrub)
     o = sub.add_parser("open"); o.add_argument("which", nargs="?"); o.set_defaults(f=cmd_open)

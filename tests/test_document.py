@@ -21,6 +21,9 @@ os.environ["CLAIMCHECK_FIXTURES"] = str(FIX)
 from claimcheck.cli import make_receipt  # noqa: E402
 from claimcheck.document import apply_privacy, canon, check_id, content_id  # noqa: E402
 from claimcheck.sign import sign, verify_signature  # noqa: E402
+import claimcheck.ledger as _ledger  # noqa: E402
+
+_ledger.FIXTURES = FIX  # the env var only counts if this file imports claimcheck first; another test may have
 
 SCHEMA = json.loads((ROOT / "spec" / "receipt-v0.1.schema.json").read_text())
 V = jsonschema.Draft202012Validator(SCHEMA)
