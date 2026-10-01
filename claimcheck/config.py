@@ -23,7 +23,7 @@ KEYS: dict[str, tuple[tuple[str, ...], str]] = {
     "review.endpoint": (("CLAIMCHECK_REVIEW_ENDPOINT", "RECEIPT_LLM_URL"), "base URL of an OpenAI-compatible server for reviews, e.g. http://127.0.0.1:8000/v1 (local = costs nothing)"),
     "review.api_key": (("CLAIMCHECK_REVIEW_API_KEY",), "API key for review.endpoint, only if the server wants one"),
     "cloud.key": (("CLAIMCHECK_CLOUD_KEY",), "claimcheck.cc API key (`claimcheck login`); unset = nothing leaves this machine"),
-    "cloud.url": (("CLAIMCHECK_CLOUD_URL",), "hosted service, default https://claimcheck.cc"),
+    "cloud.url": (("CLAIMCHECK_CLOUD_URL",), "hosted service API, default https://api.claimcheck.cc"),
     "cloud.witness": (("CLAIMCHECK_WITNESS",), "on | off: send each event's fingerprint (hashes only) as a run happens"),
     "cloud.share": (("CLAIMCHECK_SHARE",), "off | flagged | all: share receipts automatically after each run"),
     "cloud.privacy": (("CLAIMCHECK_SHARE_PRIVACY",), "summary | full | hashes: what a shared receipt shows (default summary)"),
