@@ -15,7 +15,7 @@ from .engine import verifier_block
 from .ledger import redact
 
 VERDICTS = ["contradicted", "pre-existing", "unverified", "verified", "unchecked"]
-REDACTION_ID = "claimcheck-redact-v1"
+REDACTION_ID = "claimcheck-redact-v2"
 
 
 def iso(ts: float | None) -> str | None:

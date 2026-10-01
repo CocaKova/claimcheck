@@ -36,8 +36,14 @@ times are RFC 3339 `…Z` strings with milliseconds). `id` is computed over the 
 ## Redaction
 
 Applied to every event and to the report before hashing. Rule-set id in `capture.redaction`
-(`claimcheck-redact-v1`): password/secret/token/api-key assignments (value replaced, key kept),
-`sk-…`/`gh?_…`/`xox?-…`/`AKIA…` tokens, JWTs, PEM private keys. Hashes cover the redacted text, so a
+(`claimcheck-redact-v2`): password/secret/token/api-key assignments in shell, YAML and JSON (value
+replaced, name kept), env-style `*_KEY`/`*_PASS`/`*_SECRET`/`*_TOKEN`/`*_DSN`/`*_SESSION` names,
+`--password x` flags, `scheme://user:PASSWORD@host`, `Bearer`/`Basic`/`Token` credentials, Slack and
+Discord webhook URLs, and secrets recognised by shape: OpenAI/Anthropic `sk-…`, Stripe `sk_/rk_live|test_…`
+and `whsec_…`, GitHub, GitLab, npm, Hugging Face, Google `AIza…`, Slack, Tailscale, ntfy, Telegram bot,
+AWS, age, JWTs, PEM private keys. Placeholders (`$VAR`, `<…>`, `{{…}}`) and paths to secret files are
+kept. v1 receipts predate the JSON, env-suffix, URL and vendor-shape rules.
+Hashes cover the redacted text, so a
 receipt can be re-verified without the secret ever existing again.
 
 ## Verification of a receipt (no run log needed)
