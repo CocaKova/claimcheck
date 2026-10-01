@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: no cover - Windows
     fcntl = None
 
-DEFAULT_URL = "https://claimcheck.cc"
+DEFAULT_URL = "https://api.claimcheck.cc"  # the API host; share links are claimcheck.cc/r/... (the site forwards those)
 OUTBOX = HOME / "witness-outbox.jsonl"
 PRIVACY_ORDER = ("full", "summary", "hashes")
 _cache: dict = {"mtime": None, "cfg": {}}
