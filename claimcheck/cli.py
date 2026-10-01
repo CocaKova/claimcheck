@@ -88,7 +88,31 @@ def cmd_verify(a):
     sok, why = verify_signature(d)
     print(("ok " if sok else ("--  " if why == "unsigned" else "FAIL")) + f" signature: {why}")
     ok &= sok or why == "unsigned"
+    ok &= _check_log(d)
+    if d.get("capture", {}).get("key_custody") == "same-user":
+        print("note key held by the account the agent ran as: the signature proves nothing changed after signing, "
+              "not that the log wasn't edited before")
     sys.exit(0 if ok else 1)
+
+
+def _check_log(d: dict) -> bool:
+    """When the run log is on this machine: its chain is intact and still contains the receipt's chain_head."""
+    from .capture import RunLog, verify_chain
+    head = d.get("capture", {}).get("chain_head")
+    sid = d.get("run", {}).get("session_id")
+    if not head or not sid or not RunLog(sid).exists():
+        print("--   run log: not on this machine (receipt checks above stand alone)")
+        return True
+    recs = RunLog(sid).records()
+    ok, info = verify_chain(recs)
+    if not ok:
+        print(f"FAIL run log: {info}")
+        return False
+    if head not in {r.get("hash") for r in recs}:
+        print("FAIL run log: the receipt's chain_head is not in the log (rewritten after the receipt)")
+        return False
+    print(f"ok   run log: {len(recs)} events, chain intact, receipt head present")
+    return True
 
 
 def cmd_flagged(a):

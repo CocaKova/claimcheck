@@ -16,6 +16,9 @@ from .ledger import redact
 
 VERDICTS = ["contradicted", "pre-existing", "unverified", "verified", "unchecked"]
 REDACTION_ID = "claimcheck-redact-v2"
+# The key lives in ~/.claimcheck/key, readable by the account the agent runs as. Say so in every receipt until
+# custody moves somewhere the agent can't reach (a separate user, hardware, a hosted signer).
+KEY_CUSTODY = "same-user"
 
 
 def iso(ts: float | None) -> str | None:
@@ -94,7 +97,7 @@ def build(session: dict, msgs: list[dict], L: dict, claims: list[dict], *, adapt
         },
         "capture": {
             "mode": "at-rest", "events": len(L["events"]), "hash_alg": "sha256", "redaction": REDACTION_ID,
-            **(capture or {}),
+            "key_custody": KEY_CUSTODY, **(capture or {}),
         },
         "ledger": {
             "tool_calls": len(L["events"]),

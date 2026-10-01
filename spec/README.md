@@ -55,6 +55,19 @@ receipt can be re-verified without the secret ever existing again.
 Re-verification of *verdicts* needs the run log: recompute claims from `report.text` with the verifier at
 `verifier.version` / `rules_sha256` and compare.
 
+## What a signature proves, and what it doesn't
+
+A valid signature proves the receipt has not changed since it was signed, by the holder of key `kid`.
+`capture.key_custody` says who that holder is. Today every adapter keeps the key in `~/.claimcheck/key`,
+readable by the account the agent runs as (`same-user`): an agent with a shell could rewrite its run log
+before the receipt is made, or sign a receipt of its own. So a `same-user` receipt is evidence of what the
+log said at signing time, not proof the log is complete or untouched. Custody that closes that gap —
+`separate-user`, `hardware`, `hosted` (event hashes sent off the machine as they happen) — is planned, and
+receipts will say which one they had.
+
+`claimcheck verify <receipt>` also checks the local run log when it is on the machine: the chain must be
+intact and must still contain the receipt's `chain_head`, so a log edited after the receipt fails.
+
 ## Live capture (adapters)
 
 An adapter that runs beside the agent appends every tool call to `~/.claimcheck/runs/<session_id>.jsonl`

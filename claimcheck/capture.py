@@ -7,10 +7,16 @@ Events are redacted before they are hashed, so re-verification never needs the r
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import threading
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows
+    fcntl = None
 
 from .document import canon, iso, parse_iso, sha256
 from .ledger import event_from_hook, redact
@@ -24,9 +30,23 @@ _locks: dict[str, threading.Lock] = {}
 _locks_guard = threading.Lock()
 
 
-def _lock(session_id: str) -> threading.Lock:
+@contextlib.contextmanager
+def _lock(session_id: str, path: Path):
+    """One writer per session log. Threads (Hermes runs parallel tool calls in-process) share the threading lock;
+    processes (Claude Code fires one hook process per parallel tool call) share an flock on a sidecar file."""
     with _locks_guard:
-        return _locks.setdefault(session_id, threading.Lock())
+        tl = _locks.setdefault(session_id, threading.Lock())
+    with tl:
+        if fcntl is None:  # pragma: no cover - Windows: threads only
+            yield
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path.with_suffix(".lock"), "a") as lf:
+            fcntl.flock(lf, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lf, fcntl.LOCK_UN)
 
 
 def _safe_id(session_id: str) -> str:
@@ -67,7 +87,7 @@ class RunLog:
                      ("agent_id", agent_id), ("exit_code", exit_code), ("truncated", truncated or None)):
             if v is not None:
                 rec[k] = v
-        with _lock(self.session_id):
+        with _lock(self.session_id, self.path):
             i, prev = self._tail()
             rec["i"], rec["prev"] = i, prev
             rec["hash"] = event_hash(rec)

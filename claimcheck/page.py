@@ -302,7 +302,7 @@ blockquote.final {{ margin:12px 0 0; padding:14px 16px; background:var(--ground)
   <h2 class="tech">In the agent's own words</h2>
   <details class="tech"><summary>Show the final report</summary><blockquote class="final">{e(final.strip()[:4000])}</blockquote></details>
 
-  <div class="foot"><span>receipt {e(d.get('id',''))}</span><span>session {e(r['session_id'])}</span><span>claims split by code · every verdict computed from the tool log</span>{f'<span>signed {e(sig["kid"])} · verify at claimcheck.cc</span>' if sig else '<span>unsigned</span>'}</div>
+  <div class="foot"><span>receipt {e(d.get('id',''))}</span><span>session {e(r['session_id'])}</span><span>claims split by code · every verdict computed from the tool log</span>{f'<span>signed {e(sig["kid"])} · verify at claimcheck.cc</span>' if sig else '<span>unsigned</span>'}{'<span>key held on the agent&#x27;s own account: proves nothing changed after signing</span>' if sig and d.get("capture", {}).get("key_custody") == "same-user" else ''}</div>
 </article>
 <script>
 (function(){{
