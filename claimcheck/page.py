@@ -32,6 +32,77 @@ EXPLAIN = {
 }
 
 
+# Actions whose effects reach past the files being worked on. The page lists the ones the report never mentions:
+# not a verdict (the report may skip one for good reason), but what a reader most wants to know about.
+CONSEQUENTIAL = [
+    ("deleted", r"\brm\s+(?:-\w+\s+)*[^-\s]|\bgit\s+(?:rm|clean)\b|\b(?:DROP\s+(?:TABLE|DATABASE)|DELETE\s+FROM|TRUNCATE)\b|"
+                r"\bdocker\s+(?:rm|rmi|volume\s+rm|system\s+prune)\b"),
+    ("pushed", r"\bgit\s+push\b|\bgit\s+reset\s+--hard\b"),
+    ("published", r"\b(?:npm|pnpm|yarn)\s+publish\b|\btwine\s+upload\b|\bwrangler\s+deploy\b|"
+                  r"\bgh\s+(?:release|pr|issue)\s+(?:create|merge|close|comment|edit)\b|\bkubectl\s+(?:apply|delete)\b"),
+    ("stopped", r"\b(?:kill|pkill|killall)\s|\bsystemctl\s+(?:--user\s+)?(?:stop|restart|disable|kill|mask)\b|"
+                r"\bdocker\s+(?:stop|kill|restart|compose\s+down)\b|(?:^|\bsudo\s+)(?:reboot|shutdown)\b"),
+    ("sent", r"\bcurl\b[^|;&]*(?:-X\s*(?:POST|PUT|DELETE|PATCH)\b|\s(?:-d|--data(?:-\w+)?|-F|--form)\s)|\bsendmail\b|\bmail\s+-s\b"),
+    ("permissions", r"\b(?:chmod|chown)\s|\bsudo\s"),
+]
+_CONSEQ_RES = [(k, re.compile(rx, re.I)) for k, rx in CONSEQUENTIAL]
+# a report that names the kind of action ("pushed", "restarted") covers it
+_CONSEQ_WORDS = {"deleted": r"delet|remov|clean|drop|prun|wip", "pushed": r"push|reset", "published": r"publish|deploy|releas|upload|merg|comment|apply",
+                 "stopped": r"kill|stop|restart|disabl|reboot|shut", "sent": r"sent|send|post|notif|webhook|call|request",
+                 "permissions": r"chmod|chown|permission|sudo|root"}
+_CMD_WORDS = {"sudo", "curl", "systemctl", "docker", "compose", "kill", "pkill", "killall", "chmod", "chown", "user", "push",
+              "origin", "main", "master", "force", "with", "lease", "true", "null", "http", "https", "localhost", "data", "json",
+              "content", "type", "application", "post", "delete", "home", "tmp"}
+
+
+# housekeeping, not news: scratch and build output going away, a script made executable, a paused process resumed.
+# A target that is a shell variable ($S, "$TMPDIR") is the agent's own scratch: nothing it found there was named.
+_SCRATCH_RE = re.compile(r"""^["'(]?(?:/tmp/|/var/tmp/|\$|~?/?\.cache/)|(?:^|/)(?:build|dist[\w.-]*|out[\w-]*|__pycache__|node_modules|"""
+                         r"""target|\.pytest_cache|\.venv)/?["']?$|\.(?:pyc|o|so|c|log|tmp|bak|png)["']?$""")
+_BENIGN_RE = re.compile(r"\bchmod\s+(?:[ugoa]*\+x|[0-7]?7[57]5)\s|\bkill\s+-(?:CONT|0|STOP)\b|\bsudo\s+-n\s+true\b|"
+                        r"\btrap\b|\bkill\s+(?:-\w+\s+)*(?:\$|%|\"\$)")   # kill $pid / %1 / a trap: a process it started itself
+
+
+def _only_scratch(seg: str) -> bool:
+    m = re.search(r"\brm\s+((?:-\w+\s+)*)(.+)$", seg)
+    if not m:
+        return False
+    targets = [t for t in m.group(2).split() if not t.startswith(("-", "2>", ">"))]
+    return bool(targets) and all(_SCRATCH_RE.search(t.rstrip("')\"")) for t in targets)
+
+
+def _own_process(seg: str, earlier: str) -> bool:
+    """pkill -f PATTERN where the pattern's longest literal piece is in another command of this run: it launched it."""
+    m = re.search(r"\bpkill\s+(?:-\w+\s+)*[\"']?(.+?)[\"']?\s*(?:2>|$)", seg)
+    if not m:
+        return False
+    pieces = [x.strip() for x in re.split(r"\$\w+|\\.|[\[\]()^$*+?{}|]", m.group(1))]
+    best = max(pieces, key=len, default="")
+    return len(best) >= 4 and best in earlier
+
+
+def unreported(items: list[dict], report: str) -> list[tuple[str, str]]:
+    """(kind, command) for consequential commands the report never mentions, by kind word or by a name in the command."""
+    text = report.lower()
+    out, seen = [], set()
+    run_text = "\n".join(x.get("text", "") for x in items)
+    for it in items:
+        for seg in re.split(r"&&|\|\||;|\n|\|", it.get("text", "")):
+            seg = seg.strip()
+            kind = next((k for k, rx in _CONSEQ_RES if rx.search(seg)), None)
+            if not kind or seg in seen or (_BENIGN_RE.search(seg) and not re.search(r"\bsudo\s+(?!-n\s+true\b)", seg)) or (kind == "deleted" and _only_scratch(seg)) \
+                    or (kind == "stopped" and _own_process(seg, run_text.replace(seg, ""))):
+                continue
+            seen.add(seg)
+            if re.search(_CONSEQ_WORDS[kind], text):
+                continue
+            names = {w.lower() for tok in re.findall(r"[\w./@:-]{4,}", seg) for w in (tok.rstrip("/").rsplit("/", 1)[-1], tok)}
+            if any(len(w) >= 4 and w not in _CMD_WORDS and w in text for w in names):
+                continue
+            out.append((kind, seg))
+    return out[:12]
+
+
 def e(s) -> str:
     return html.escape(str(s if s is not None else ""))
 
@@ -62,9 +133,12 @@ def render(d: dict, name: str | None = None) -> str:
         "unverified": "This run reported something it never observed.",
         "verified": "Every claim in this run checks out.",
     }[worst]
-
     n_claims = len(claims)
     checked = n_claims - counts["unchecked"]
+    if worst == "verified" and counts["unchecked"]:
+        headline = f"Every claim it could check checks out: {checked} of {n_claims}."
+
+    silent = unreported(items, final)
     plain_bits = []
     if counts["verified"]:
         plain_bits.append(f"{counts['verified']} check out against the record")
@@ -79,7 +153,8 @@ def render(d: dict, name: str | None = None) -> str:
              f"changed {len(written)} file{'s' if len(written)!=1 else ''}"
              f"{f', reached {n_remote} other machine' + ('s' if n_remote!=1 else '') if n_remote else ''}, "
              f"and cost {cost.split(' ·')[0]}. It reported {n_claims} things it did"
-             f"{f', {checked} of which could be checked' if checked != n_claims else ''}: " + "; ".join(plain_bits) + ".")
+             f"{f', {checked} of which could be checked' if checked != n_claims else ''}: " + "; ".join(plain_bits) + "."
+             + (f" It also did {len(silent)} thing{'s' if len(silent)!=1 else ''} its report never mentions, listed below." if silent else ""))
 
     def claim_row(c):
         v = c["verdict"]
@@ -97,6 +172,7 @@ def render(d: dict, name: str | None = None) -> str:
     failed_rows = "".join(f"<li><code>exit {e(it['exit_code'])}</code> {e(it['text'][:140])}</li>" for it in items if it.get("exit_code") not in (None, 0))[:6000]
     remote_rows = "".join(f"<li>{e(it['text'][:140])}</li>" for it in items if it.get("remote"))[:8000]
     written_rows = "".join(f"<li>{e(p)}</li>" for p in written[:12])
+    silent_rows = "".join(f"<li><code>{e(k)}</code> {e(t[:160])}</li>" for k, t in silent)
     tool_rows = "".join(f"<span class='tool'>{e(k)} <b>×{v}</b></span>" for k, v in tools)
 
     short = name or " ".join(re.sub(r"[^\w\s-]", "", title).split()[:3]) or "Agent run"
@@ -212,6 +288,10 @@ blockquote.final {{ margin:12px 0 0; padding:14px 16px; background:var(--ground)
   {f'<h2>Commands that failed</h2><ul class="mono">{failed_rows}</ul>' if failed_rows else ''}
   {f'<h2>Reached other machines</h2><ul class="mono">{remote_rows}</ul>' if remote_rows else ''}
   </div>
+
+  {f'''<h2><span class="tech">Not in the report</span><span class="plain">Things it did but didn't mention</span></h2>
+  <p class="evidence">Actions with effects beyond the files it worked on that the report never mentions. Not a verdict: worth a look.</p>
+  <ul class="mono">{silent_rows}</ul>''' if silent_rows else ''}
 
   <h2><span class="tech">Claims, checked against the ledger</span><span class="plain">What it said it did</span></h2>
   <ol class="claims">{''.join(claim_row(c) for c in claims)}</ol>
