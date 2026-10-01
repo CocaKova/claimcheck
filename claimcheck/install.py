@@ -302,7 +302,7 @@ def doctor() -> list[str]:
     from .store import iter_receipts, is_flagged
     lines = [f"claimcheck home: {HOME}", f"python: {sys.version.split()[0]} · signing backend: {BACKEND} · key: {'present' if KEY_FILE.exists() else 'missing (made on first receipt)'}",
              "key custody: same-user — an agent running as you can read the key, so a signature proves a receipt "
-             "wasn't changed after signing, not that the agent couldn't edit its log first"]
+             "wasn't changed after signing, not that the agent couldn't edit its log first", _cloud_line()]
     for a in [*AGENTS, "hermes"]:
         present = (AGENTS[a]["dir"] if a in AGENTS else HOMEDIR / ".hermes").is_dir()
         if not present:
@@ -324,6 +324,14 @@ def doctor() -> list[str]:
     if not config.get("review.model") or config.effective_agent() == "endpoint":
         lines += local.lines(local.detect(config.get("review.api_key")))
     return lines
+
+
+def _cloud_line() -> str:
+    from . import cloud
+    if not cloud.key():
+        return "claimcheck.cc: not logged in — nothing leaves this machine (`claimcheck login <key>` adds the witness and share links)"
+    return (f"claimcheck.cc: logged in ({cloud.base_url()}) · witness {'on' if cloud.witness_on() else 'off'} · "
+            f"{cloud._queued()} fingerprints waiting to send · auto-share {cloud.setting('cloud.share') or 'off'}")
 
 
 def open_latest(which: str | None = None) -> str:

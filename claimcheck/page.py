@@ -112,7 +112,8 @@ def fmt_dur(sec: float) -> str:
     return f"{m // 60} h {m % 60} min" if m >= 60 else f"{m} min"
 
 
-def render(d: dict, name: str | None = None) -> str:
+def render(d: dict, name: str | None = None, banner: str = "") -> str:
+    """The receipt page. `banner` is trusted HTML shown at the top of the sheet (the hosted service's witness note)."""
     r = d["run"]; L = d["ledger"]; U = L.get("usage", {})
     start = parse_iso(r["started_at"]).timestamp(); end = parse_iso(r["ended_at"]).timestamp()
     claims = sorted(d["claims"], key=lambda c: ORDER.index(c["verdict"]))
@@ -256,6 +257,7 @@ blockquote.final {{ margin:12px 0 0; padding:14px 16px; background:var(--ground)
 </style>
 
 <article class="sheet">
+  {banner}
   <div class="eyebrow">
     <span>Receipt</span><span>{e(datetime.fromtimestamp(start).strftime('%Y-%m-%d %H:%M'))}</span><span>{e(fmt_dur(end - start))}</span><span>{e(r['agent'].get('platform'))}</span><span>{e(r['agent'].get('model') or '')}</span>
   </div>

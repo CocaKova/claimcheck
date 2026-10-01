@@ -241,6 +241,13 @@ def finish_turn(n: dict, *, privacy: str = "full", sign: bool = True, chatty: bo
     except Exception as e:  # the JSON is the receipt; the page is a convenience
         logger.debug("page render failed: %s", e)
     _turn_marker(sid, tid)
+    try:
+        from .cloud import after_receipt
+        link = after_receipt(doc, path)
+        if link:
+            logger.info("shared %s → %s", doc["id"], link)
+    except Exception as e:  # sharing is a convenience; the local receipt stands
+        logger.warning("cloud: %s", e)
     return doc, path
 
 
