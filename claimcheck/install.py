@@ -300,7 +300,9 @@ def ask_review_model(agents: list[str], found: list) -> tuple[str, object] | Non
 def doctor() -> list[str]:
     from .sign import BACKEND, KEY_FILE
     from .store import iter_receipts, is_flagged
-    lines = [f"claimcheck home: {HOME}", f"python: {sys.version.split()[0]} · signing backend: {BACKEND} · key: {'present' if KEY_FILE.exists() else 'missing (made on first receipt)'}"]
+    lines = [f"claimcheck home: {HOME}", f"python: {sys.version.split()[0]} · signing backend: {BACKEND} · key: {'present' if KEY_FILE.exists() else 'missing (made on first receipt)'}",
+             "key custody: same-user — an agent running as you can read the key, so a signature proves a receipt "
+             "wasn't changed after signing, not that the agent couldn't edit its log first"]
     for a in [*AGENTS, "hermes"]:
         present = (AGENTS[a]["dir"] if a in AGENTS else HOMEDIR / ".hermes").is_dir()
         if not present:

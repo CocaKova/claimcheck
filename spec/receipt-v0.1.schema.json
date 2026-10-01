@@ -141,6 +141,16 @@
         "log_ref": {
           "type": "string",
           "description": "Where the adapter kept the run log (local path or URL). Never required to verify the receipt."
+        },
+        "key_custody": {
+          "type": "string",
+          "enum": [
+            "same-user",
+            "separate-user",
+            "hardware",
+            "hosted"
+          ],
+          "description": "Who held the signing key. same-user: the account the agent ran as could read it, so the signature proves the receipt was not changed after signing, not that the log was not edited before. Absent on receipts made before 0.1.3."
         }
       }
     },
