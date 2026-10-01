@@ -55,6 +55,14 @@ receipt can be re-verified without the secret ever existing again.
 Re-verification of *verdicts* needs the run log: recompute claims from `report.text` with the verifier at
 `verifier.version` / `rules_sha256` and compare.
 
+## Re-redaction (`claimcheck scrub`)
+
+When the redaction rules improve, `claimcheck scrub` re-applies them to run logs and receipts already on
+disk: records are redacted again and the chain rebuilt (a chain broken by a concurrent append is mended the
+same way); each receipt is redacted again, its `chain_head` moved to the same event's new hash, `redaction`
+set to the current rule-set and `capture.rescrubbed` stamped, then it is signed again by the same key.
+`~/.claimcheck/scrub.log` records each run. Nothing but redaction changes.
+
 ## What a signature proves, and what it doesn't
 
 A valid signature proves the receipt has not changed since it was signed, by the holder of key `kid`.
