@@ -196,7 +196,7 @@ def cmd_login(a):
     from . import cloud, config
     key = a.key or (input("claimcheck.cc API key: ").strip() if sys.stdin.isatty() else "")
     if not key.startswith("cck_"):
-        sys.exit("an API key starts with cck_ (it's on your thanks page, or in the email we sent you)")
+        sys.exit("an API key starts with cck_ (it's on your claim link once you're let into early access, or on the page after checkout)")
     url = (a.url or cloud.base_url()).rstrip("/")
     code, me = cloud.api("GET", "/v1/me", api_key=key, url=url)
     if code != 200:

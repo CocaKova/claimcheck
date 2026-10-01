@@ -1,7 +1,7 @@
 {
   "name": "claimcheck",
   "displayName": "claimcheck — receipts for agent runs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "After every turn, a signed receipt: what the agent touched, what it claimed, and whether the two match. Hooks capture each tool call live; the check runs on your machine; nothing leaves it.",
   "author": { "name": "CocaKova", "url": "https://claimcheck.cc" },
   "homepage": "https://claimcheck.cc",

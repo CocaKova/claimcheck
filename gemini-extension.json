@@ -1,5 +1,5 @@
 {
   "name": "claimcheck",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Receipts for agent runs: hooks capture each tool call live; each turn ends with a signed receipt of what was touched vs. what was claimed. Local only."
 }
