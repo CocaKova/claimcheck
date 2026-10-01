@@ -88,6 +88,8 @@ def scrub_receipt(path: Path, mapping: dict[str, str], key=None, dry_run: bool =
         sign(n, key)
     if not dry_run:
         _write(path, json.dumps(n, indent=1, ensure_ascii=False))
+        with open(path.parent.parent.parent / "scrub-ids.jsonl", "a") as f:   # reviews and links name the old id
+            f.write(json.dumps({"old": d.get("id"), "new": n["id"], "path": str(path)}) + "\n")
         html = path.with_suffix(".html")
         try:
             from .page import render
