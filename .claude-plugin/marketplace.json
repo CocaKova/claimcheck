@@ -2,13 +2,13 @@
   "name": "claimcheck",
   "description": "Receipts for AI agent runs: what the agent touched, what it claimed, whether the two match.",
   "owner": { "name": "CocaKova", "url": "https://claimcheck.cc" },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "plugins": [
     {
       "name": "claimcheck",
       "source": "./",
       "description": "Signed receipt after every turn. Hooks capture each tool call live; the check runs on your machine; nothing leaves it.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "category": "productivity",
       "tags": ["receipts", "verification", "audit", "hooks"]
     }
