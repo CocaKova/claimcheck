@@ -1,5 +1,6 @@
 """claimcheck CLI.
 
+  claimcheck scrub [--dry-run]
   claimcheck receipt <hermes-session-id> [--fixture] [--classify none|local] [--privacy full|summary|hashes] [--sign] [--out DIR] [--md]
   claimcheck page <receipt.json> [--name NAME] > page.html
   claimcheck verify <receipt.json>
@@ -179,6 +180,15 @@ def cmd_open(a):
     print(open_latest(a.which))
 
 
+def cmd_scrub(a):
+    from .capture import HOME
+    from .scrub import scrub
+    r = scrub(HOME, dry_run=a.dry_run)
+    print(("would rewrite" if a.dry_run else "rewrote") + f" {r['logs_rewritten']} of {r['logs']} run logs "
+          f"({r['chains_mended']} broken chains mended), {r['receipts_rewritten']} of {r['receipts']} receipts, "
+          f"{r['asked_rewritten']} saved prompts")
+
+
 def cmd_keygen(a):
     from .sign import KEY_FILE, keygen, kid, load_key, pub_raw
     p = keygen(KEY_FILE, overwrite=a.force)
@@ -212,6 +222,8 @@ def main(argv=None):
     rv = sub.add_parser("review"); rv.add_argument("which", nargs="?"); rv.add_argument("--limit", type=int, default=3)
     rv.add_argument("--dry-run", action="store_true"); rv.set_defaults(f=cmd_review)
     sub.add_parser("doctor").set_defaults(f=cmd_doctor)
+    sc = sub.add_parser("scrub", help="re-apply the current redaction rules to run logs and receipts already on disk")
+    sc.add_argument("--dry-run", action="store_true"); sc.set_defaults(f=cmd_scrub)
     o = sub.add_parser("open"); o.add_argument("which", nargs="?"); o.set_defaults(f=cmd_open)
     d = sub.add_parser("dump-fixture"); d.add_argument("session_id"); d.set_defaults(f=lambda a: print(dump_fixture(a.session_id)))
     a = ap.parse_args(argv)

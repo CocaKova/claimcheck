@@ -151,6 +151,11 @@
             "hosted"
           ],
           "description": "Who held the signing key. same-user: the account the agent ran as could read it, so the signature proves the receipt was not changed after signing, not that the log was not edited before. Absent on receipts made before 0.1.3."
+        },
+        "rescrubbed": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Set when `claimcheck scrub` re-applied newer redaction rules to this receipt and its run log after it was made; the receipt was re-signed then by the same key. Nothing but redaction (and the chain head that moved with it) changed."
         }
       }
     },
