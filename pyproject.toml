@@ -9,7 +9,7 @@ description = "Receipts for AI agent runs: what it touched, what it claimed, whe
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
-dependencies = ["claimcheck-core>=0.1"]  # verdict engine (binary wheels); cryptography/PyNaCl optional, pure-Python signer built in
+dependencies = ["claimcheck-core>=0.1.2"]  # verdict engine (binary wheels); cryptography/PyNaCl optional, pure-Python signer built in
 
 [project.optional-dependencies]
 fast = ["cryptography>=41"]
