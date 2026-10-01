@@ -117,8 +117,8 @@ reviewer), a claimcheck.cc account adds:
 
 What leaves your machine, and nothing else: those fingerprints (never content) and the receipts you share,
 at `cloud.privacy` (default `summary`: the report and claims, command first words, file names). Off until
-`claimcheck login <key>`; `claimcheck logout` turns it off again. Early access to Pro is free while billing
-isn't open: get a key at [claimcheck.cc](https://claimcheck.cc/#pricing).
+`claimcheck login <key>`; `claimcheck logout` turns it off again. Sharing and the witness are part of the Pro
+plan, in invite-only early access while billing opens: join at [claimcheck.cc](https://claimcheck.cc/#pricing).
 
 ## For the Hermes owner: review cards
 
