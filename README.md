@@ -85,10 +85,12 @@ accountability for agent work, the same way a till receipt is for a cashier.
 ## How it stays honest
 
 - **The check runs where the log lives.** The verifier is a small pure-Python library that runs inside the
-  hook, in milliseconds, offline. No transcript is ever uploaded anywhere.
+  hook, in milliseconds, offline. No transcript is ever uploaded anywhere (sharing, below, is opt-in and
+  sends only what you share).
 - **Captured live, not read back later.** Hooks hand over each tool result before the platform truncates or
   compacts it; each event carries the hash of the previous one.
-- **Redacted before hashing.** Passwords, tokens, keys and PEM blocks are stripped from every event and from
+- **Redacted before hashing.** Passwords, tokens, API keys (OpenAI, Anthropic, Stripe, GitHub, Google and
+  more), database URLs and PEM blocks are stripped from every event and from
   the report before anything is hashed or written, so a receipt can be re-verified without the secret ever
   existing again.
 - **Deterministic.** Same report + same log = same receipt. The report is split into units by code; a model
@@ -99,6 +101,24 @@ accountability for agent work, the same way a till receipt is for a cashier.
   is its content hash. `cryptography` or PyNaCl when present, a vendored pure-Python signer otherwise, so a
   hook works with nothing but `python3`.
 - **Open format.** `spec/receipt-v0.1.schema.json` + `spec/README.md`. Anyone can write a verifier or a viewer.
+
+## Sharing a receipt (claimcheck.cc, optional)
+
+Everything above works with no account. When someone else has to see a receipt (a client, a boss, a
+reviewer), a claimcheck.cc account adds:
+
+- **Share links.** `claimcheck share` turns the newest receipt into `https://claimcheck.cc/r/<link>`, a
+  page that opens on a phone with no account on their side. `cloud.share flagged|all` does it after every
+  run; `claimcheck history`, `claimcheck dashboard` and `claimcheck unshare <link>` manage them.
+- **A live witness.** While the agent runs, each step's fingerprint (its index, hash and the previous hash)
+  goes to claimcheck.cc as it happens. A shared receipt that ends on a fingerprint received live says
+  *Witnessed live*: the log behind it wasn't rewritten afterwards. A rewritten event shows up as *Record
+  rewritten*. What it can't stop: a machine compromised during the run can fingerprint a forged log live.
+
+What leaves your machine, and nothing else: those fingerprints (never content) and the receipts you share,
+at `cloud.privacy` (default `summary`: the report and claims, command first words, file names). Off until
+`claimcheck login <key>`; `claimcheck logout` turns it off again. Early access to Pro is free while billing
+isn't open: get a key at [claimcheck.cc](https://claimcheck.cc/#pricing).
 
 ## For the Hermes owner: review cards
 
