@@ -7,7 +7,9 @@ The Office subscribed to its end. A card is opened only when there is something 
 any `contradicted` or `pre-existing` receipt, or at least CLAIMCHECK_REVIEW_UNVERIFIED_MIN `unverified`
 ones. Only receipts from the platforms in CLAIMCHECK_REVIEW_PLATFORMS (default: hermes — the agent reviews
 its own runs; chat sessions of other agents are listed by `claimcheck flagged`, never carded). Silent when
-there is nothing. Dedup: a state file plus the kanban idempotency key.
+there is nothing. Dedup: a state file plus the kanban idempotency key. Each flagged receipt is re-verified
+against its run log first (`store.recheck`): a flag that a rules fix made after the receipt already clears
+is never carded.
 
     hermes cron create "40 6 * * *" --name "Claimcheck review digest" \
         --script claimcheck-review-bridge.py --no-agent --deliver local
@@ -34,7 +36,7 @@ except ImportError:  # <repo>/hermes_plugin/ or <site-packages>/claimcheck/herme
         if (_p / "claimcheck" / "__init__.py").exists():
             sys.path.insert(0, str(_p))
             break
-from claimcheck.store import HOME, digest, is_flagged, iter_receipts  # noqa: E402
+from claimcheck.store import HOME, digest, is_flagged, iter_receipts, recheck  # noqa: E402
 
 MARKER = "[claimcheck-review]"
 STATE = HOME / "review-bridge.json"
@@ -87,7 +89,7 @@ def _adapter(doc: dict) -> str:
 def main() -> int:
     state = json.loads(STATE.read_text()) if STATE.exists() else {"seen": [], "cards": {}}
     seen = set(state["seen"])
-    strong, weak, other = [], [], 0
+    strong, weak, other, cleared = [], [], 0, 0
     for path, doc in iter_receipts():
         rid = doc.get("id")
         if not rid or rid in seen:
@@ -97,6 +99,10 @@ def main() -> int:
             continue
         if PLATFORMS != ["*"] and _adapter(doc) not in PLATFORMS:
             other += 1
+            continue
+        doc = recheck(doc)   # stored verdicts predate any later rules fix; review only what today's rules still flag
+        if not is_flagged(doc):
+            cleared += 1
             continue
         (strong if doc["summary"]["headline"] in STRONG else weak).append((path, doc))
     picked = (strong + weak)[:MAX] if (strong or len(weak) >= UNVERIFIED_MIN) else []
@@ -124,7 +130,8 @@ def main() -> int:
             if tid and CHAT:
                 _run("kanban", "notify-subscribe", str(tid), "--platform", "matrix", "--chat-id", CHAT)
             state["cards"][key] = {"task": tid, "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "receipts": ids}
-            print(f"review card {tid}: {len(picked)} receipt(s) — {', '.join(heads)}")
+            print(f"review card {tid}: {len(picked)} receipt(s) — {', '.join(heads)}"
+                  + (f" ({cleared} more cleared by today's rules)" if cleared else ""))
         # items beyond MAX stay unseen for the next digest
         for _, d in (strong + weak)[MAX:]:
             seen.discard(d["id"])
