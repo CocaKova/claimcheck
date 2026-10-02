@@ -59,7 +59,7 @@ KEEPS = [
     "sort_key=created_at",
     "docker run -p 8080:80 nginx",
     "git clone https://git@github.com/CocaKova/claimcheck",
-    "https://spark-ef6b.tail5ff3bd.ts.net:9119/api",
+    "https://spark-ab12.example.ts.net:9119/api",
     "Basic authentication is off",
     "max_tokens: 65536",
     "~/.ssh/id_ed25519.pub",
