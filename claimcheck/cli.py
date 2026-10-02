@@ -16,6 +16,7 @@
   claimcheck doctor                      # what is wired, how many receipts, any hook errors, the review model
   claimcheck open [receipt-id|session]   # open the latest (or named) receipt page in the browser
   claimcheck dump-fixture <hermes-session-id>
+  claimcheck ci check|attach|trust|key  # pull-request receipts + merge gate, any CI (see docs/ci.md)
 """
 from __future__ import annotations
 
@@ -315,6 +316,8 @@ def main(argv=None):
     sc = sub.add_parser("scrub", help="re-apply the current redaction rules to run logs and receipts already on disk")
     sc.add_argument("--dry-run", action="store_true"); sc.set_defaults(f=cmd_scrub)
     o = sub.add_parser("open"); o.add_argument("which", nargs="?"); o.set_defaults(f=cmd_open)
+    from .ci import add_parser as _ci
+    _ci(sub)
     d = sub.add_parser("dump-fixture"); d.add_argument("session_id"); d.set_defaults(f=lambda a: print(dump_fixture(a.session_id)))
     a = ap.parse_args(argv)
     a.f(a)

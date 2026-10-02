@@ -1,0 +1,81 @@
+name: claimcheck receipts
+description: One sticky pull-request comment summing up the AI agent receipts in a PR, and a merge gate. Verifies offline; no secrets needed.
+author: CocaKova
+branding:
+  icon: check-square
+  color: blue
+
+# A thin wrapper: everything happens in `claimcheck ci check` (claimcheck/ci.py), which runs the same in any CI
+# or a pre-push hook. No pip install and no network to set up: the action runs the package from its own checkout
+# with the runner's python3, so a PyPI outage can't break it. Docs: docs/ci.md
+
+inputs:
+  mode:
+    description: "checkout = read the PR from the checked-out clone (needs actions/checkout with fetch-depth: 0). api = read it through the GitHub API without checking anything out (the comment workflow for fork PRs)."
+    default: checkout
+  fail-on:
+    description: "Verdicts that fail the gate: contradicted (default), pre-existing, unverified, a comma list, flagged (all three) or none. Edited, unsigned or unpinned receipts always fail."
+    default: contradicted
+  require-receipts:
+    description: "never (default) | ai = fail when a commit says an AI agent co-wrote it and the PR has no receipt | always"
+    default: never
+  require-witness:
+    description: "Team: fail unless claimcheck.cc witnessed each run live (needs api-key)."
+    default: "false"
+  on-outage:
+    description: "open (default) = if GitHub or claimcheck.cc don't answer, the offline verdict stands and the outage is reported as a warning. closed = an outage fails the check (exit 3)."
+    default: open
+  comment:
+    description: Upsert one sticky comment on the pull request.
+    default: "true"
+  status:
+    description: Also set a 'claimcheck' commit status (needs statuses write). The job's own check is the usual merge gate.
+    default: "false"
+  receipts-dir:
+    description: Where receipts are committed.
+    default: .claimcheck/receipts
+  github-token:
+    description: Token for the comment and status. The default job token is enough.
+    default: ${{ github.token }}
+  api-key:
+    description: "Team: a claimcheck.cc repo key (claimcheck ci key create owner/repo). Adds receipt page links and the live-witness state. Leave empty for the free, offline check."
+    default: ""
+  claimcheck-url:
+    description: claimcheck.cc API base (only to point at a self-hosted or staging server).
+    default: ""
+
+outputs:
+  result:
+    description: pass | fail | outage
+    value: ${{ steps.check.outputs.result }}
+  receipts:
+    description: Number of receipts found in the pull request.
+    value: ${{ steps.check.outputs.receipts }}
+
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        CLAIMCHECK_API_KEY: ${{ inputs.api-key }}
+        CLAIMCHECK_URL: ${{ inputs.claimcheck-url }}
+        CC_MODE: ${{ inputs.mode }}
+        CC_FAIL_ON: ${{ inputs.fail-on }}
+        CC_REQUIRE: ${{ inputs.require-receipts }}
+        CC_WITNESS: ${{ inputs.require-witness }}
+        CC_OUTAGE: ${{ inputs.on-outage }}
+        CC_COMMENT: ${{ inputs.comment }}
+        CC_STATUS: ${{ inputs.status }}
+        CC_DIR: ${{ inputs.receipts-dir }}
+      run: |
+        set -euo pipefail
+        PY=$(command -v python3 || command -v python)
+        args=(ci check --fail-on "$CC_FAIL_ON" --require-receipts "$CC_REQUIRE" --on-outage "$CC_OUTAGE" --dir "$CC_DIR")
+        if [ "$CC_WITNESS" = true ]; then args+=(--require-witness); fi
+        if [ "$CC_COMMENT" = true ]; then args+=(--comment); fi
+        if [ "$CC_STATUS" = true ]; then args+=(--status); fi
+        if [ "$CC_MODE" = api ]; then args+=(--from-github); fi
+        export CLAIMCHECK_HOME="$RUNNER_TEMP/claimcheck"
+        PYTHONPATH="$GITHUB_ACTION_PATH" "$PY" -m claimcheck.cli "${args[@]}"
