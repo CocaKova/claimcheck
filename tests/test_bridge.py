@@ -26,7 +26,7 @@ def _receipt(sid, headline, verdict, adapter="hermes"):
 
 
 def _run():
-    env = {**os.environ, "CLAIMCHECK_HOME": str(HOME), "HERMES_BIN": str(FAKE), "CC_CALLS": str(HOME / "calls"), "CLAIMCHECK_REVIEW_CHAT": "!room:x"}
+    env = {**os.environ, "CLAIMCHECK_HOME": str(HOME), "RECEIPT_DB": str(HOME / "no-state.db"), "HERMES_BIN": str(FAKE), "CC_CALLS": str(HOME / "calls"), "CLAIMCHECK_REVIEW_CHAT": "!room:x"}
     return subprocess.run([sys.executable, str(ROOT / "hermes_plugin" / "review_bridge.py")], capture_output=True, text=True, env=env)
 
 
@@ -51,5 +51,24 @@ def test_digest_one_card_strong_flags_only_own_platform():
     assert set(card["receipts"]) == {"rcpt_s_strong", "rcpt_s_weak2"} and "rcpt_s_cc" in state["seen"]
 
 
+
+def test_a_flag_todays_rules_clear_is_never_carded():
+    # 10-02: cards kept serving receipts flagged under rules fixed since; the bridge re-verifies first
+    sys.path.insert(0, str(ROOT))
+    from claimcheck import engine
+    from claimcheck.capture import RunLog
+    if not engine.AVAILABLE:
+        return
+    (HOME / "calls").unlink(missing_ok=True)
+    for i in range(6):   # enough weak flags for a card, had they stood
+        sid = f"s_stale{i}"
+        _receipt(sid, "unverified", "unverified")
+        RunLog(sid, root=HOME / "runs").append(tool="write_file", args={"path": "bar.yaml", "content": "foo=1\n"},
+                                               result='{"bytes_written": 6}', ts=1.0, turn_id=f"{sid}:x:abc")
+    r = _run()
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "" and not (HOME / "calls").exists(), r.stdout
+
+
 if __name__ == "__main__":
-    test_digest_one_card_strong_flags_only_own_platform(); print("ok bridge")
+    test_digest_one_card_strong_flags_only_own_platform(); test_a_flag_todays_rules_clear_is_never_carded(); print("ok bridge")
