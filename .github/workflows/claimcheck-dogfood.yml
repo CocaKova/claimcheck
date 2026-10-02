@@ -1,0 +1,22 @@
+# THROWAWAY: dogfood of the claimcheck PR check (docs/ci.md). Not for merging.
+name: claimcheck
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./
+        with:
+          require-receipts: ai
+          status: "true"
