@@ -83,6 +83,8 @@ claimcheck hook                        # what the agents' hooks call: stdin JSON
 claimcheck receipt <hermes-session-id> [--fixture] [--classify none|local] [--privacy full|summary|hashes] [--sign] [--out DIR] [--md]
 claimcheck dump-fixture <hermes-session-id>
 claimcheck login [key] [--url URL] · logout · share [receipt] [--privacy P] · unshare <link> · history [--limit N] · dashboard
+claimcheck ci check [--base REF] [--fail-on V] [--require-receipts never|ai|always] [--on-outage open|closed] [--comment] [--status]
+claimcheck ci attach [receipt...] [--privacy P] · ci trust [--note N] · ci key create <owner/repo> | list | revoke <prefix>
 ```
 
 </details>
@@ -190,6 +192,16 @@ at `cloud.privacy` (default `summary`: the report and claims, command first word
 `claimcheck login <key>`; `claimcheck logout` turns it off again. Sharing and the witness are part of the Pro
 plan, in invite-only early access while billing opens: join at [claimcheck.cc](https://claimcheck.cc/#pricing).
 
+## Receipts on pull requests
+
+`claimcheck ci attach` copies the receipts for a branch into `.claimcheck/receipts/` so they're committed with
+the change. In CI, `claimcheck ci check` reads them, checks each offline (content id, signature, and optionally
+keys pinned on the base branch), posts **one** sticky comment with the claim counts and flagged claims, and
+exits non-zero when the merge rules say no (default: a contradicted claim, or an edited or unsigned receipt).
+It runs in any CI or a pre-push hook; this repo is also a GitHub Action (`uses: CocaKova/claimcheck@<release>`).
+Free and offline; a GitHub or claimcheck.cc outage can't change the verdict. Setup, the fork-PR comment
+workflow, GitLab and the outage policy: [docs/ci.md](docs/ci.md).
+
 ## For the Hermes owner: review cards
 
 `hermes_plugin/review_bridge.py` is a no-agent cron: every flagged receipt becomes one kanban card for the
@@ -213,7 +225,8 @@ verifier rules; the rest becomes the precision record. The card runs on the pinn
 ## Repo map
 
 ```
-claimcheck/          the library + CLI (hook, init, receipt, page, verify, sign, capture, store, engine → claimcheck-core)
+claimcheck/          the library + CLI (hook, init, receipt, page, verify, sign, capture, store, ci, engine → claimcheck-core)
+action.yml, docs/ci.md   GitHub Action wrapper for `claimcheck ci check` + the CI guide
 hermes_plugin/       Hermes Agent plugin (native hooks) + review bridge
 hooks/, bin/, .claude-plugin/   Claude Code plugin (hooks.json → bin/claimcheck-hook shim)
 plugin.json, skills/            Agent Plugins 1.0 manifest + Agent Skills (claimcheck-setup, claimcheck-review)
