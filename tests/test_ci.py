@@ -352,3 +352,12 @@ def test_setup_problems_exit_2_not_1(repo):
     with pytest.raises(SystemExit) as ex:
         main(["ci", "check", "--base", "no-such-branch"])
     assert ex.value.code == 2
+
+
+def test_attach_warns_when_gitignore_hides_receipts(repo, tmp_path, capsys):
+    (repo / ".gitignore").write_text("receipts/\n")
+    f = tmp_path / "r.json"; f.write_text(json.dumps(receipt()))
+    from claimcheck.cli import main
+    with pytest.raises(SystemExit):
+        main(["ci", "attach", str(f)])
+    assert "WARNING: .gitignore hides" in capsys.readouterr().out

@@ -32,6 +32,9 @@ claimcheck ci attach rcpt_…     # or name them
 git add .claimcheck/receipts && git commit -m "receipts for this change"
 ```
 
+If `.gitignore` has a bare `receipts/` rule it hides `.claimcheck/receipts/` too; `attach` warns about it. Anchor
+the rule (`/receipts/`) or add `!.claimcheck/receipts/`.
+
 `attach` writes at `--privacy summary` by default: the agent's report and claims, file names and the first word of
 each command, never full commands or file contents. Use `--privacy hashes` for a public repo where even the report
 text shouldn't be published. A commit can also name a receipt shared on claimcheck.cc with a trailer
