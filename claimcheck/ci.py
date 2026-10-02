@@ -660,6 +660,9 @@ def cmd_attach(a) -> int:
         p.write_text(json.dumps(v, indent=1, ensure_ascii=False) + "\n")
         s = v["summary"]
         print(f"wrote {p.relative_to(root)} · {s['headline']} · privacy {v.get('privacy')}")
+    if subprocess.run(["git", "check-ignore", "-q", str(dest / "x.json")], cwd=root).returncode == 0:
+        print(f"WARNING: .gitignore hides {a.dir}/ (a 'receipts/' rule?), so the receipts won't be committed. "
+              f"Add '!{a.dir}/' to .gitignore, or anchor the rule ('/receipts/').")
     print(f"commit {a.dir}/ with the change; at '{a.privacy}' a receipt carries the agent's report and claims "
           + ("and file names" if a.privacy != "hashes" else "as hashes only"))
     return 0
