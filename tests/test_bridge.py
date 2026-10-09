@@ -11,16 +11,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 HOME = Path(tempfile.mkdtemp(prefix="claimcheck-bridge-"))
 FAKE = HOME / "hermes"
-FAKE.write_text("#!/bin/sh\necho \"$@\" >> \"$CC_CALLS\"\n[ \"$2\" = create ] && cat >/dev/null && echo '{\"id\": \"t_fake1\", \"status\": \"ready\"}'\nexit 0\n")
+FAKE.write_text("#!/bin/sh\necho \"$@\" >> \"$CC_CALLS\"\n[ \"$2\" = create ] && cat >> \"$CC_CALLS.body\" && echo '{\"id\": \"t_fake1\", \"status\": \"ready\"}'\nexit 0\n")
 FAKE.chmod(0o755)
 
 
-def _receipt(sid, headline, verdict, adapter="hermes"):
+def _receipt(sid, headline, verdict, adapter="hermes", n_claims=1):
     d = HOME / "receipts" / sid; d.mkdir(parents=True)
     doc = {"id": f"rcpt_{sid}", "created_at": "2026-09-26T00:00:00.000Z",
            "run": {"session_id": sid, "turn_id": f"{sid}:x:abc", "adapter": adapter, "agent": {"platform": "matrix"}, "asked": "do the thing"},
            "summary": {"verified": 1, "unverified": 0, "pre_existing": 0, "contradicted": 0, "unchecked": 0, "headline": headline},
-           "claims": [{"i": 0, "text": "Added foo=1 to bar.yaml", "kind": "file_changed", "targets": ["foo=1"], "verdict": verdict, "evidence": "`foo=1` appears only in content the agent read"}]}
+           "claims": [{"i": i, "text": f"Added {k} to bar.yaml", "kind": "file_changed", "targets": [k], "verdict": verdict,
+                       "evidence": f"`{k}` appears only in content the agent read"}
+                      for i, k in enumerate(["foo=1"] if n_claims == 1 else [f"foo{j}=1" for j in range(n_claims)])]}
     doc["summary"][verdict.replace("-", "_")] = 1 if verdict != "verified" else 0
     (d / "abc.json").write_text(json.dumps(doc))
 
@@ -68,6 +70,24 @@ def test_a_flag_todays_rules_clear_is_never_carded():
     r = _run()
     assert r.returncode == 0, r.stderr
     assert r.stdout.strip() == "" and not (HOME / "calls").exists(), r.stdout
+
+
+def test_a_card_is_sized_by_claims_and_carries_leads():
+    # 10-09: five receipts / eight claims timed out twice at a fixed 25 min; a card's size and clock follow its claims
+    (HOME / "calls").unlink(missing_ok=True)
+    (HOME / "calls.body").unlink(missing_ok=True)
+    for i in range(4):
+        _receipt(f"s_big{i}", "pre-existing", "pre-existing", n_claims=3)
+    r = _run()
+    assert r.returncode == 0, r.stderr
+    calls = (HOME / "calls").read_text()
+    assert "review card t_fake1: 2 receipt(s)" in r.stdout            # 3 + 3 claims fit under 8; a third would not
+    assert "--max-runtime 28m" in calls                                # 10 + 3 x 6
+    body = (HOME / "calls.body").read_text()
+    assert body.count("lead: `foo") == 6 and "no trace" in body       # every flagged literal comes with its leads
+    assert "kanban_comment" in body and "undecided" in body
+    r2 = _run()                                                        # the other two wait for the next digest
+    assert "review card t_fake1: 2 receipt(s)" in r2.stdout
 
 
 if __name__ == "__main__":

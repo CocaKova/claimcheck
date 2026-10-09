@@ -216,6 +216,7 @@ def finish_turn(n: dict, *, privacy: str = "full", sign: bool = True, chatty: bo
     L_turn = ledger_from_events(list(turn_events)) if turn_events is not all_events else L_all
     asked = n["asked"] or recall_prompt(sid)
     L_all["inputs"] = [redact(asked)] if asked else []   # what it was given backs claims about its input, never work
+    L_all["context"] = _context(n, tid)                   # injected memory, instructions, earlier prompts: facts only
     claims = extract_claims(final, use_llm=False) if final else []
     for c in claims:
         c["verdict"], c["evidence"] = verify_claim(c, L_all)
@@ -251,12 +252,29 @@ def finish_turn(n: dict, *, privacy: str = "full", sign: bool = True, chatty: bo
     return doc, path
 
 
+def _context(n: dict, tid) -> list[str]:
+    """Bring the session's context up to date from the transcript (when the platform keeps one), then load it."""
+    try:
+        from . import context
+        if n.get("transcript_path"):
+            context.add_many(n["session_id"], tid, context.blocks_from_transcript(n["transcript_path"], n["session_id"]))
+        return context.load(n["session_id"], tid)
+    except Exception as e:  # context is extra evidence; a receipt without it is still a receipt
+        logger.debug("context: %s", e)
+        return []
+
+
 def _asked_path(sid: str) -> Path:
     return HOME / "runs" / f"{RunLog(sid).path.stem}.asked"
 
 
 def remember_prompt(n: dict):
     if n["session_id"] and n["asked"]:
+        try:
+            from . import context
+            context.add(n["session_id"], n["turn_id"], "user", n["asked"])   # every turn's prompt, not just the last
+        except Exception as e:
+            logger.debug("context: %s", e)
         try:
             _asked_path(n["session_id"]).parent.mkdir(parents=True, exist_ok=True)
             _asked_path(n["session_id"]).write_text(json.dumps({"turn_id": n["turn_id"], "asked": redact_text(n["asked"])[:4000]}))

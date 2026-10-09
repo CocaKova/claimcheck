@@ -1,6 +1,7 @@
 """claimcheck Hermes plugin — a signed receipt for every run.
 
 post_tool_call  → append the call to the session's hash-chained run log (before storage truncation)
+pre_api_request → keep what the model was given (system prompt, injected memory, user messages) as context
 post_llm_call   → remember the turn's final report and the user's request
 on_session_end  → split the report into claims, check each against the run log, sign, write
                   ~/.claimcheck/receipts/<session>/<turn>.json + .html; then claimcheck.cc if logged in (cloud.py)
@@ -73,6 +74,18 @@ def on_post_tool_call(*, tool_name=None, args=None, result=None, session_id=None
                                   tool_call_id=tool_call_id, status=status, duration_ms=duration_ms)
     except Exception as e:  # never hurt the turn
         logger.warning("claimcheck: capture failed for %s: %s", tool_name, e)
+
+
+def on_pre_api_request(*, session_id=None, turn_id=None, system_prompt=None, request_messages=None, **_):
+    """Whatever memory provider, context file or plugin fed the prompt, it is in this request. Repeats are
+    cheap: a block the session already has is skipped by hash before any disk work."""
+    if not session_id:
+        return
+    try:
+        from claimcheck import context
+        context.add_many(session_id, turn_id, context.blocks_from_messages(request_messages, system_prompt))
+    except Exception as e:  # never hurt the turn
+        logger.warning("claimcheck: context capture failed: %s", e)
 
 
 def on_post_llm_call(*, session_id=None, turn_id=None, user_message=None, assistant_response=None,
@@ -176,6 +189,7 @@ def make_run_receipt(session_id: str, turn: dict | None, *, turn_id=None, model=
     L_all = ledger_from_events(all_events)          # claims may refer to earlier turns of the same session
     L_turn = ledger_from_events(list(turn_events)) if turn_events is not all_events else L_all
     L_all["inputs"] = [redact(asked)] if asked else []   # a cron job's prompt + injected script output; never proves work
+    L_all["context"] = _context(session_id, tid)            # what the model was given: backs facts, never work
     claims = extract_claims(redact(final), use_llm=False) if final else []
     for c in claims:
         c["verdict"], c["evidence"] = verify_claim(c, L_all)
@@ -197,6 +211,15 @@ def make_run_receipt(session_id: str, turn: dict | None, *, turn_id=None, model=
     return doc, path
 
 
+def _context(session_id: str, turn_id) -> list[str]:
+    try:
+        from claimcheck import context
+        return context.load(session_id, turn_id)
+    except Exception as e:
+        logger.debug("claimcheck: context load failed: %s", e)
+        return []
+
+
 def _after(doc: dict, path: Path) -> None:
     try:
         from claimcheck.cloud import after_receipt
@@ -216,6 +239,7 @@ def register(ctx) -> None:
         "receipt_chatty": _cfg(ctx, "receipt_chatty", False),
     })
     ctx.register_hook("post_tool_call", on_post_tool_call)
+    ctx.register_hook("pre_api_request", on_pre_api_request)
     ctx.register_hook("post_llm_call", on_post_llm_call)
     ctx.register_hook("on_session_end", on_session_end)
     ctx.register_hook("subagent_stop", on_subagent_stop)

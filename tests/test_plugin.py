@@ -119,3 +119,34 @@ def test_second_turn_gets_its_own_receipt_and_ledger():
 if __name__ == "__main__":
     test_live_receipt_end_to_end(); test_no_tools_no_receipt_unless_chatty(); test_second_turn_gets_its_own_receipt_and_ledger()
     print("ok plugin")
+
+
+def test_recalled_memory_backs_facts_not_work():
+    # a memory provider (memcore, gbrain, a context file — any of them) injects facts into the request; the
+    # receipt sees them through pre_api_request and verifies the recall, never a claim of work
+    sid = "sess_ctx_1"
+    ctx = Ctx(); plugin.register(ctx); h = ctx.hooks
+    memory = "<memory>\n- Keryx 2.18.0 shipped group chats on 2026-10-06 (project_keryx_218_group_chats.md)\n</memory>"
+    for n in (1, 2):   # the same blocks on every request of the turn are stored once
+        h["pre_api_request"](session_id=sid, turn_id="t1", api_call_count=n, system_prompt="You are Sy, an operator agent. " * 3,
+                             request_messages=[{"role": "system", "content": "You are Sy, an operator agent. " * 3},
+                                               {"role": "user", "content": [{"type": "text", "text": memory + "\n\nWhich release had group chats?"}]},
+                                               {"role": "assistant", "content": "Keryx 9.9.9 shipped everything on 2026-01-01, I decided."}])
+    h["post_tool_call"](tool_name="terminal", args={"command": "date"}, session_id=sid, turn_id="t1", tool_call_id="c1",
+                        status="ok", result=json.dumps({"output": "Fri Oct  9 2026", "exit_code": 0}))
+    report = ("- Group chats shipped in Keryx `2.18.0` on 2026-10-06.\n"
+              "- Source: `project_keryx_218_group_chats.md`.\n"
+              "- Released `2.18.0` with `ship.sh --release`.\n"
+              "- Keryx `9.9.9` shipped everything.\n")
+    h["post_llm_call"](session_id=sid, turn_id="t1", user_message="Which release had group chats?", assistant_response=report, model="m", platform="cli")
+    h["on_session_end"](session_id=sid, turn_id="t1", completed=True, model="m", platform="cli")
+    doc = json.loads((CH / "receipts" / sid / "t1.json").read_text())
+    by = {c["text"]: (c["verdict"], c["evidence"]) for c in doc["claims"]}
+    v = lambda frag: next(val for k, val in by.items() if frag in k)  # noqa: E731
+    assert v("Group chats")[0] == "verified" and "context" in v("Group chats")[1]
+    assert v("Source")[0] == "verified"
+    assert v("ship.sh")[0] != "verified"                      # being told about a release is not releasing
+    assert v("9.9.9")[0] != "verified"                        # the agent's own earlier words are not evidence
+    idx = RunLog(sid).path.with_name(f"{sid}.context.jsonl")
+    assert len(idx.read_text().splitlines()) == 2             # system prompt + memory-bearing user message, once each
+    assert not list(V.iter_errors(doc))

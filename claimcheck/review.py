@@ -38,20 +38,22 @@ STDIN_NOTE = "The receipt to review follows on stdin."
 
 INSTRUCTIONS = """You are reviewing a claimcheck receipt of an agent run. Code compared the agent's final report with
 its tool log and flagged claims the log does not show. Decide, for each flagged claim, whether the verifier
-was RIGHT (the report said something the log does not show) or WRONG (a false flag: the fact is in the log,
-spelled differently, or in an earlier turn of the same session). Prove it from the raw run log, which is
-one record per tool call (`tool`, `args`, `result`, `status`, `turn_id`). Read only: do not run
-anything, do not edit anything, never quote secrets.
+was RIGHT (the report said something the record does not show) or WRONG (a false flag: the fact is in the
+log, spelled differently, in an earlier turn of the same session, or in the context the agent was given and
+the claim states a fact rather than work). Each flagged claim lists `lead:` lines — where its literals do
+appear, or that they appear nowhere; the agent's own earlier words are never evidence. Start from the leads;
+the raw run log is one record per tool call (`tool`, `args`, `result`, `status`, `turn_id`). Read only: do
+not run anything, do not edit anything, never quote secrets. If a claim cannot be settled, say undecided.
 
 Answer with ONE block per flagged claim, in exactly this shape and nothing else:
 
 claim: <the flagged sentence, shortened>
-verdict: verifier-right | false-flag
-why: <one sentence pointing at the log line: tool, command or path, and what it shows>
+verdict: verifier-right | false-flag | undecided
+why: <one sentence pointing at the lead or log line: tool, command or path, and what it shows>
 rule: <false-flag only: what the verifier should have matched, e.g. "YAML `key: value` equals `key=value`">
 """
 
-VERDICT_RE = re.compile(r"^\s*\**verdict\**:\s*\**(verifier-right|false-flag)", re.I | re.M)
+VERDICT_RE = re.compile(r"^\s*\**verdict\**:\s*\**(verifier-right|false-flag|undecided)", re.I | re.M)
 THINK_RE = re.compile(r"<think>.*?</think>\s*", re.S)
 
 
@@ -97,7 +99,7 @@ def _log_path(doc: dict) -> Path:
 def _cli_prompt(doc: dict, path: Path) -> str:
     log = _log_path(doc)
     where = f"run log: {log}" if log.exists() else f"run log: none on disk (receipt {path} carries the ledger summary only)"
-    return INSTRUCTIONS + "\n" + digest(doc, path) + "\n" + where + "\n"
+    return INSTRUCTIONS + "\n" + digest(doc, path, with_leads=True) + "\n" + where + "\n"
 
 
 # ---------------------------------------------------------------- endpoint: inline the evidence
@@ -158,7 +160,7 @@ def evidence(doc: dict) -> tuple[str, str]:
 
 def _endpoint_prompt(doc: dict, path: Path) -> str:
     ev, note = evidence(doc)
-    body = digest(doc, path) + f"\n\nrun log excerpt ({note}):\n\n" + (ev or "(none)") + "\n"
+    body = digest(doc, path, with_leads=True) + f"\n\nrun log excerpt ({note}):\n\n" + (ev or "(none)") + "\n"
     return body
 
 
