@@ -22,7 +22,8 @@ the context the agent was given and the transcript — so the reviewer reads and
 Env: CLAIMCHECK_REVIEW_ASSIGNEE (default `default`), CLAIMCHECK_REVIEW_CHAT (Matrix room id; empty = no
 subscription), CLAIMCHECK_REVIEW_MAX (receipts per card, default 5), CLAIMCHECK_REVIEW_MAX_CLAIMS (default 8),
 CLAIMCHECK_REVIEW_MINUTES_PER_CLAIM (default 3), CLAIMCHECK_REVIEW_PLATFORMS (comma list, default `hermes`;
-`*` = all), CLAIMCHECK_REVIEW_UNVERIFIED_MIN (default 5).
+`*` = all), CLAIMCHECK_REVIEW_UNVERIFIED_MIN (default 5; `off` = only contradicted / pre-existing are ever
+carded: for an agent whose unverified flags are almost all false alarms).
 Receipts of the review runs themselves are skipped (their request carries the marker below).
 """
 from __future__ import annotations
@@ -51,7 +52,9 @@ ASSIGNEE = os.environ.get("CLAIMCHECK_REVIEW_ASSIGNEE", "default")
 CHAT = os.environ.get("CLAIMCHECK_REVIEW_CHAT", "")  # e.g. a Matrix room id; empty = no subscription
 MAX = int(os.environ.get("CLAIMCHECK_REVIEW_MAX", "5"))
 PLATFORMS = [x.strip() for x in os.environ.get("CLAIMCHECK_REVIEW_PLATFORMS", "hermes").split(",") if x.strip()]
-UNVERIFIED_MIN = int(os.environ.get("CLAIMCHECK_REVIEW_UNVERIFIED_MIN", "5"))
+_umin = os.environ.get("CLAIMCHECK_REVIEW_UNVERIFIED_MIN", "5").strip().lower()
+WEAK = _umin not in ("off", "0", "none", "")
+UNVERIFIED_MIN = int(_umin) if WEAK else 0
 MAX_CLAIMS = int(os.environ.get("CLAIMCHECK_REVIEW_MAX_CLAIMS", "8"))
 MIN_PER_CLAIM = float(os.environ.get("CLAIMCHECK_REVIEW_MINUTES_PER_CLAIM", "3"))
 STRONG = ("contradicted", "pre-existing")
@@ -136,7 +139,9 @@ def main() -> int:
             cleared += 1
             continue
         (strong if doc["summary"]["headline"] in STRONG else weak).append((path, doc))
-    picked = _budget(strong + weak) if (strong or len(weak) >= UNVERIFIED_MIN) else []
+    if not WEAK:
+        weak = []   # unverified flags stay on the receipts (`claimcheck flagged`); they are never carded
+    picked = _budget(strong + weak) if (strong or (weak and len(weak) >= UNVERIFIED_MIN)) else []
     if picked:
         ids = [d["id"] for _, d in picked]
         key = "receipts-" + hashlib.sha256("".join(ids).encode()).hexdigest()[:16]

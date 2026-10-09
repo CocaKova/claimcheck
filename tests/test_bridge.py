@@ -27,8 +27,8 @@ def _receipt(sid, headline, verdict, adapter="hermes", n_claims=1):
     (d / "abc.json").write_text(json.dumps(doc))
 
 
-def _run():
-    env = {**os.environ, "CLAIMCHECK_HOME": str(HOME), "RECEIPT_DB": str(HOME / "no-state.db"), "HERMES_BIN": str(FAKE), "CC_CALLS": str(HOME / "calls"), "CLAIMCHECK_REVIEW_CHAT": "!room:x"}
+def _run(**extra):
+    env = {**os.environ, **extra, "CLAIMCHECK_HOME": str(HOME), "RECEIPT_DB": str(HOME / "no-state.db"), "HERMES_BIN": str(FAKE), "CC_CALLS": str(HOME / "calls"), "CLAIMCHECK_REVIEW_CHAT": "!room:x"}
     return subprocess.run([sys.executable, str(ROOT / "hermes_plugin" / "review_bridge.py")], capture_output=True, text=True, env=env)
 
 
@@ -88,6 +88,19 @@ def test_a_card_is_sized_by_claims_and_carries_leads():
     assert "kanban_comment" in body and "undecided" in body
     r2 = _run()                                                        # the other two wait for the next digest
     assert "review card t_fake1: 2 receipt(s)" in r2.stdout
+
+
+def test_unverified_off_cards_only_strong_flags():
+    (HOME / "calls").unlink(missing_ok=True)
+    (HOME / "calls.body").unlink(missing_ok=True)
+    for i in range(6):
+        _receipt(f"s_off_w{i}", "unverified", "unverified")
+    r = _run(CLAIMCHECK_REVIEW_UNVERIFIED_MIN="off")
+    assert r.returncode == 0, r.stderr
+    assert not (HOME / "calls").exists(), r.stdout                    # six weak flags: no card
+    _receipt("s_off_strong", "contradicted", "contradicted")
+    r = _run(CLAIMCHECK_REVIEW_UNVERIFIED_MIN="off")
+    assert "review card t_fake1: 1 receipt(s) — contradicted" in r.stdout   # strong alone, no weak riders
 
 
 if __name__ == "__main__":
