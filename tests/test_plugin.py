@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
 
 def test_recalled_memory_backs_facts_not_work():
-    # a memory provider (memcore, gbrain, a context file — any of them) injects facts into the request; the
+    # a memory provider (any of them, or a context file) injects facts into the request; the
     # receipt sees them through pre_api_request and verifies the recall, never a claim of work
     sid = "sess_ctx_1"
     ctx = Ctx(); plugin.register(ctx); h = ctx.hooks

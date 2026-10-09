@@ -57,10 +57,10 @@ def test_transcript_reads_only_new_lines():
     d = Path(tempfile.mkdtemp())
     tr = d / "t.jsonl"
     lines = [
-        {"type": "attachment", "attachment": {"type": "instructions"}, "rendered": [{"content": "MEMORY.md: deploy host is spark-ef6b"}]},
+        {"type": "attachment", "attachment": {"type": "instructions"}, "rendered": [{"content": "MEMORY.md: deploy host is build-host-01"}]},
         {"type": "user", "message": {"content": "what's the deploy host again?"}},
         {"type": "user", "message": {"content": [{"type": "tool_result", "content": "a tool result"}]}},
-        {"type": "assistant", "message": {"content": "it's spark-ef6b"}},
+        {"type": "assistant", "message": {"content": "it's build-host-01"}},
     ]
     tr.write_text("".join(json.dumps(x) + "\n" for x in lines))
     got = list(context.blocks_from_transcript(tr, "ctx_tr"))

@@ -13,6 +13,11 @@
   <a href="https://github.com/CocaKova/claimcheck/blob/main/LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 </p>
 
+> **Archived (October 2026).** claimcheck is no longer maintained. On the models we ran it against, agents'
+> reports almost always matched their tool logs, so nearly every flag was a false alarm, and the hosted service
+> at claimcheck.cc (accounts, witness, share links) has been shut down. The code stays here as a reference and
+> `pip install claimcheck-receipts` still works; nothing below that mentions claimcheck.cc is live.
+
 # claimcheck
 
 **Receipts for AI agent runs.** After every turn, a receipt: what the agent touched (commands, files,
